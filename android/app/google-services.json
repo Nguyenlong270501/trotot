@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1012146705116",
+    "project_id": "tro-tot-fb458",
+    "storage_bucket": "tro-tot-fb458.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1012146705116:android:a4f611351b195c35e9da19",
+        "android_client_info": {
+          "package_name": "com.example.trotot"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyApPkBeIgQA0gi93y6jqomDvt6qgmil_vc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

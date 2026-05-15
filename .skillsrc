@@ -1,0 +1,29 @@
+registry: https://github.com/HoangNguyen0403/agent-skills-standard
+agents:
+  - cursor
+skills:
+  flutter:
+    ref: flutter-v1.7.0
+    exclude:
+      - flutter-riverpod-state-management
+      - flutter-auto-route-navigation
+      - flutter-getx-navigation
+      - flutter-getx-state-management
+      - flutter-localization
+      - flutter-retrofit-networking
+      - flutter-dependency-injection
+  dart:
+    ref: dart-v1.3.4
+  common:
+    ref: common-v2.0.4
+    exclude:
+      - common-accessibility
+      - common-api-design
+      - common-observability
+      - common-system-design
+custom_overrides: []
+workflows: false
+mcp:
+  enabled: false
+  scope: disabled
+  prompted: true
