@@ -64,8 +64,5 @@ String buildFilterSelectionSummary({
       .toList()
     ..sort();
 
-  if (labels.length <= 2) {
-    return labels.join(', ');
-  }
-  return 'Đã chọn: ${labels.length}';
+  return labels.join(', ');
 }

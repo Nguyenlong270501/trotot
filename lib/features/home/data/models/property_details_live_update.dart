@@ -3,7 +3,7 @@ import '../../../reviews/data/models/property_review_model.dart';
 import 'property_model.dart';
 import 'room_model.dart';
 
-/// Merged realtime payload for the property details screen.
+
 class PropertyDetailsLiveUpdate {
   const PropertyDetailsLiveUpdate({
     required this.property,

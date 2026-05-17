@@ -61,20 +61,14 @@ class PropertyDetailsLiveRepository {
     }
 
     final subscriptions = <StreamSubscription<dynamic>>[];
+    var secondaryStarted = false;
 
-    subscriptions.add(
-      _homeRemote.watchPropertyDetailsBundle(propertyId: propertyId).listen(
-        (bundle) {
-          propertyMissing = !bundle.exists;
-          property = bundle.property;
-          rooms = bundle.rooms;
-          publish();
-        },
-        onError: controller.addError,
-      ),
-    );
+    void startSecondarySubscriptions() {
+      if (secondaryStarted || trimmedUid.isEmpty) {
+        return;
+      }
+      secondaryStarted = true;
 
-    if (trimmedUid.isNotEmpty) {
       subscriptions.add(
         _favoriteRepository
             .watchIsFavorited(uid: trimmedUid, propertyId: propertyId)
@@ -130,7 +124,22 @@ class PropertyDetailsLiveRepository {
               },
             ),
       );
-    } else {
+    }
+
+    subscriptions.add(
+      _homeRemote.watchPropertyDetailsBundle(propertyId: propertyId).listen(
+        (bundle) {
+          propertyMissing = !bundle.exists;
+          property = bundle.property;
+          rooms = bundle.rooms;
+          publish();
+          startSecondarySubscriptions();
+        },
+        onError: controller.addError,
+      ),
+    );
+
+    if (trimmedUid.isEmpty) {
       isCheckingAppointment = false;
     }
 

@@ -13,6 +13,8 @@ import '../data/models/property_review_model.dart';
 import '../data/repositories/reviews_repository.dart';
 import '../blocs/review_form/review_form_cubit.dart';
 import '../blocs/review_form/review_form_state.dart';
+import 'review_editor_dialog.dart';
+
 class PropertyReviewsSection extends StatelessWidget {
   const PropertyReviewsSection({
     super.key,
@@ -28,6 +30,30 @@ class PropertyReviewsSection extends StatelessWidget {
   final String currentUserName;
   final List<PropertyReviewModel> reviews;
   final PropertyReviewModel? currentUserReview;
+
+  bool get _isPropertyOwner =>
+      currentUserId.isNotEmpty &&
+      currentUserId == property.landlordId.trim();
+
+  bool get _canWriteOrEditReview =>
+      currentUserId.isNotEmpty && !_isPropertyOwner;
+
+  Future<void> _openReviewEditor(BuildContext context) async {
+    final cubit = context.read<ReviewFormCubit>();
+    cubit.hydrateDraft(currentUserReview);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => BlocProvider.value(
+        value: cubit,
+        child: ReviewEditorDialog(
+          property: property,
+          currentUserId: currentUserId,
+          currentUserName: currentUserName,
+          existingReview: currentUserReview,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,21 +116,7 @@ class PropertyReviewsSection extends StatelessWidget {
             if (star != 1) AppSizes.gapH8,
           ],
           AppSizes.gapH14,
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.icon(
-              onPressed: null,
-              icon: Icon(
-                Icons.rate_review_outlined,
-                size: 18.sp,
-              ),
-              label: const Text('Viết đánh giá'),
-              style: FilledButton.styleFrom(
-                disabledBackgroundColor: AppColors.textDisabled,
-                disabledForegroundColor: Colors.white,
-              ),
-            ),
-          ),
+          _buildReviewAction(context),
           AppSizes.gapH16,
           if (reviews.isEmpty)
             Padding(
@@ -117,8 +129,33 @@ class PropertyReviewsSection extends StatelessWidget {
               ),
             )
           else
-            ...reviews.map(_buildReviewItem),
+            ...reviews.map((review) => _buildReviewItem(context, review)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildReviewAction(BuildContext context) {
+    if (!_canWriteOrEditReview) {
+      if (_isPropertyOwner) {
+        return Text(
+          'Chủ trọ không thể đánh giá bài đăng của mình.',
+          style: AppTypography.medium12(color: AppColors.textMuted),
+        );
+      }
+      return const SizedBox.shrink();
+    }
+
+    final hasReview = currentUserReview != null;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: FilledButton.icon(
+        onPressed: () => _openReviewEditor(context),
+        icon: Icon(
+          hasReview ? Icons.edit_outlined : Icons.rate_review_outlined,
+          size: 18.sp,
+        ),
+        label: Text(hasReview ? 'Sửa đánh giá' : 'Viết đánh giá'),
       ),
     );
   }
@@ -180,7 +217,9 @@ class PropertyReviewsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildReviewItem(PropertyReviewModel review) {
+  Widget _buildReviewItem(BuildContext context, PropertyReviewModel review) {
+    final isOwnReview =
+        _canWriteOrEditReview && review.userId.trim() == currentUserId.trim();
     final initials = review.userName
         .split(' ')
         .map((e) => e.isNotEmpty ? e[0] : '')
@@ -220,15 +259,32 @@ class PropertyReviewsSection extends StatelessWidget {
                 ),
               ),
               Row(
-                children: List.generate(5, (index) {
-                  return Icon(
-                    index < review.rating
-                        ? Icons.star_rounded
-                        : Icons.star_outline_rounded,
-                    color: AppColors.starColor,
-                    size: 16.sp,
-                  );
-                }),
+                children: [
+                  ...List.generate(5, (index) {
+                    return Icon(
+                      index < review.rating
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      color: AppColors.starColor,
+                      size: 16.sp,
+                    );
+                  }),
+                  if (isOwnReview) ...[
+                    AppSizes.gapW4,
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      tooltip: 'Sửa đánh giá',
+                      onPressed: () => _openReviewEditor(context),
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        size: 18.sp,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),

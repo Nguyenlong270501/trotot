@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/constants/app_sizes.dart';
-import '../../../../../core/services/fcm_service.dart';
-import '../../../../../core/widgets/app_alerts.dart';
+import '../../../../../core/mixins/notification_permission_lifecycle_mixin.dart';
 import '../../../../../core/widgets/aurora_background.dart';
 import '../../../../favorites/presentation/screens/favorites_tab.dart';
 import '../../../../messages/presentation/screens/messages_screen.dart';
@@ -26,30 +25,15 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with NotificationPermissionLifecycleMixin<HomeScreen> {
   late final ValueNotifier<int> _selectedIndex;
-  static bool _notificationPermissionHandled = false;
 
   @override
   void initState() {
     super.initState();
-    _selectedIndex = ValueNotifier<int>(widget.initialBottomNavIndex.clamp(0, 3));
-    WidgetsBinding.instance.addPostFrameCallback((_) => _requestNotificationOnHome());
-  }
-
-  Future<void> _requestNotificationOnHome() async {
-    if (_notificationPermissionHandled || !mounted) {
-      return;
-    }
-    _notificationPermissionHandled = true;
-
-    final isGranted = await FCMService().requestNotificationPermission();
-    if (!mounted || isGranted) {
-      return;
-    }
-
-    Alerts.of(context).showInfo(
-      'Bạn có thể bật thông báo trong Cài đặt để nhận tin về lịch hẹn.',
+    _selectedIndex = ValueNotifier<int>(
+      widget.initialBottomNavIndex.clamp(0, 3),
     );
   }
 

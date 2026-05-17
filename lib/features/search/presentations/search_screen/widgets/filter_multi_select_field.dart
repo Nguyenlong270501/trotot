@@ -12,6 +12,7 @@ import 'filter_sheet_options.dart';
 class FilterMultiSelectField extends StatelessWidget {
   const FilterMultiSelectField({
     super.key,
+    required this.label,
     required this.sheetType,
     required this.sheetTitle,
     required this.searchHint,
@@ -22,6 +23,7 @@ class FilterMultiSelectField extends StatelessWidget {
     required this.isWard,
   });
 
+  final String label;
   final FilterSheetType sheetType;
   final String sheetTitle;
   final String searchHint;
@@ -80,35 +82,43 @@ class FilterMultiSelectField extends StatelessWidget {
       child: InkWell(
         onTap: () => _openSheet(context),
         borderRadius: BorderRadius.circular(12.r),
-        child: Container(
-          margin: EdgeInsets.only(top: 2.h),
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: Colors.grey[400]!),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: AppTypography.medium16(color: AppColors.textPrimary),
+            floatingLabelStyle: AppTypography.medium16(
+              color: AppColors.textPrimary,
+            ),
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            hintText: hasSelection ? null : placeholder,
+            hintStyle: AppTypography.medium14(color: Colors.grey[600]),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 15.w,
+              vertical: 15.h,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide(color: Colors.grey[400]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide(color: Colors.grey[400]!),
+            ),
+            suffixIcon: Icon(
+              Icons.arrow_drop_down,
+              color: Colors.grey[600],
+              size: 28.sp,
+            ),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  hasSelection ? summary : placeholder,
-                  style: AppTypography.medium14(
-                    color: hasSelection
-                        ? AppColors.textPrimary
-                        : Colors.grey[600],
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: Colors.grey[600],
-                size: 24.sp,
-              ),
-            ],
-          ),
+          isEmpty: !hasSelection,
+          child: hasSelection
+              ? Text(
+                  summary,
+                  style: AppTypography.medium14(color: AppColors.textPrimary),
+                )
+              : const SizedBox.shrink(),
         ),
       ),
     );

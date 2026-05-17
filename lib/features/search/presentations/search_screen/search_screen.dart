@@ -79,10 +79,9 @@ class SearchScreen extends StatelessWidget {
                       Text('Thành phố', style: AppTypography.bold14()),
                       AppSizes.gapH8,
                       CityDropdown(city: city),
-                      AppSizes.gapH16,
-                      Text('Xã / Phường', style: AppTypography.bold14()),
-                      AppSizes.gapH8,
+                      AppSizes.gapH20,
                       FilterMultiSelectField(
+                        label: 'Xã / Phường',
                         sheetType: FilterSheetType.ward,
                         sheetTitle: 'Chọn phường/xã',
                         searchHint: 'Nhập nội dung tìm kiếm',
@@ -92,13 +91,9 @@ class SearchScreen extends StatelessWidget {
                         buildOptions: buildWardSheetOptions,
                         isWard: true,
                       ),
-                      AppSizes.gapH16,
-                      Text(
-                        'Loại hình nhà cho thuê',
-                        style: AppTypography.bold14(),
-                      ),
-                      AppSizes.gapH8,
+                      AppSizes.gapH20,
                       FilterMultiSelectField(
+                        label: 'Loại hình nhà cho thuê',
                         sheetType: FilterSheetType.propertyType,
                         sheetTitle: 'Chọn loại hình nhà cho thuê',
                         searchHint: 'Nhập nội dung tìm kiếm',

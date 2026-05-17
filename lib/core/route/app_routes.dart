@@ -21,7 +21,7 @@ import '../../features/profile/blocs/change_password_form/change_password_form_c
 import '../../features/home/blocs/property_details_live/property_details_live_cubit.dart';
 import '../../features/home/data/datasources/firebase_home_remote_datasources/home_remote_data_source.dart';
 import '../../features/home/data/repositories/property_details_live_repository.dart';
-import '../../features/home/presentation/screens/property_details.dart/property_details_screen.dart';
+import '../../features/home/presentation/screens/property_details.dart/property_details_route_shell.dart';
 import '../../features/profile/blocs/landlord_status/landlord_status_cubit.dart';
 import '../../features/profile/blocs/profile_edit/profile_edit_cubit.dart';
 import '../../features/profile/blocs/profile_image.dart/profile_image_cubit.dart';
@@ -197,10 +197,13 @@ class AppRoutes {
                   initialProperty: property,
                   initialRooms: rooms,
                   initialActiveRoomId: initialActiveRoomId,
-                )..start(),
+                ),
               ),
             ],
-            child: PropertyDetailsScreen(property: property, rooms: rooms),
+            child: PropertyDetailsRouteShell(
+              property: property,
+              rooms: rooms,
+            ),
           );
         },
       ),

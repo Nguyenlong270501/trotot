@@ -85,6 +85,15 @@ class PropertyDetailsLiveCubit extends Cubit<PropertyDetailsLiveState> {
         ? currentActive
         : (rooms.isNotEmpty ? rooms.first.roomId : '');
 
+    if (_isRedundantLiveUpdate(
+      update: update,
+      property: property,
+      rooms: rooms,
+      nextActiveRoomId: nextActive,
+    )) {
+      return;
+    }
+
     emit(
       state.copyWith(
         property: property,
@@ -98,6 +107,48 @@ class PropertyDetailsLiveCubit extends Cubit<PropertyDetailsLiveState> {
         clearError: true,
       ),
     );
+  }
+
+  bool _isRedundantLiveUpdate({
+    required PropertyDetailsLiveUpdate update,
+    required PropertyModel property,
+    required List<RoomModel> rooms,
+    required String nextActiveRoomId,
+  }) {
+    final s = state;
+    if (s.property.propertyId != property.propertyId) {
+      return false;
+    }
+    if (s.activeRoomId != nextActiveRoomId) {
+      return false;
+    }
+    if (s.isFavorited != update.isFavorited) {
+      return false;
+    }
+    if (s.isCheckingAppointment != update.isCheckingAppointment) {
+      return false;
+    }
+    if (s.latestAppointment != update.latestAppointment) {
+      return false;
+    }
+    if (s.currentUserReview != update.currentUserReview) {
+      return false;
+    }
+    if (!const ListEquality<String>().equals(
+      s.reviews.map((r) => r.reviewId).toList(),
+      update.reviews.map((r) => r.reviewId).toList(),
+    )) {
+      return false;
+    }
+    if (!const ListEquality<String>().equals(
+      s.rooms.map((r) => r.roomId).toList(),
+      rooms.map((r) => r.roomId).toList(),
+    )) {
+      return false;
+    }
+    return s.property.updatedAt == property.updatedAt &&
+        s.property.ratingAverage == property.ratingAverage &&
+        s.property.totalReviews == property.totalReviews;
   }
 
   void selectRoom(RoomModel room) {

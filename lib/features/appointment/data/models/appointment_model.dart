@@ -35,6 +35,8 @@ class AppointmentModel {
     required this.tenantPhone,
     this.landlordCancelReason,
     this.tenantCancelReason,
+    this.cancelledBy,
+    this.acceptedBy,
   });
 
   final String appointmentId;
@@ -52,6 +54,8 @@ class AppointmentModel {
   final String tenantPhone;
   final String? landlordCancelReason;
   final String? tenantCancelReason;
+  final String? cancelledBy;
+  final String? acceptedBy;
 
   AppointmentModel copyWith({
     String? appointmentId,
@@ -69,6 +73,8 @@ class AppointmentModel {
     String? tenantPhone,
     String? landlordCancelReason,
     String? tenantCancelReason,
+    String? cancelledBy,
+    String? acceptedBy,
   }) {
     return AppointmentModel(
       appointmentId: appointmentId ?? this.appointmentId,
@@ -87,6 +93,8 @@ class AppointmentModel {
       landlordCancelReason:
           landlordCancelReason ?? this.landlordCancelReason,
       tenantCancelReason: tenantCancelReason ?? this.tenantCancelReason,
+      cancelledBy: cancelledBy ?? this.cancelledBy,
+      acceptedBy: acceptedBy ?? this.acceptedBy,
     );
   }
 
@@ -110,6 +118,8 @@ class AppointmentModel {
       if (landlordCancelReason != null)
         'landlordCancelReason': landlordCancelReason,
       if (tenantCancelReason != null) 'tenantCancelReason': tenantCancelReason,
+      if (cancelledBy != null) 'cancelledBy': cancelledBy,
+      if (acceptedBy != null) 'acceptedBy': acceptedBy,
     };
   }
 
@@ -135,6 +145,8 @@ class AppointmentModel {
       tenantPhone: (map['tenantPhone'] ?? '').toString(),
       landlordCancelReason: _parseOptionalString(map['landlordCancelReason']),
       tenantCancelReason: _parseOptionalString(map['tenantCancelReason']),
+      cancelledBy: _parseOptionalString(map['cancelledBy']),
+      acceptedBy: _parseOptionalString(map['acceptedBy']),
     );
   }
 

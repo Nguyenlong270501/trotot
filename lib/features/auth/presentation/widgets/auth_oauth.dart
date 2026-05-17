@@ -3,9 +3,16 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_style.dart';
 
 class AuthOauthSection extends StatelessWidget {
+  const AuthOauthSection({
+    super.key,
+    this.onFacebookPressed,
+    this.onGooglePressed,
+    this.isEnabled = true,
+  });
+
   final void Function()? onFacebookPressed;
   final void Function()? onGooglePressed;
-  const AuthOauthSection({super.key, this.onFacebookPressed, this.onGooglePressed});
+  final bool isEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +20,7 @@ class AuthOauthSection extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: onGooglePressed,
+            onPressed: isEnabled ? onGooglePressed : null,
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
               side: BorderSide(color: Colors.grey.shade300),
@@ -43,7 +50,7 @@ class AuthOauthSection extends StatelessWidget {
         AppSizes.gapW16,
         Expanded(
           child: OutlinedButton(
-            onPressed: onFacebookPressed,
+            onPressed: isEnabled ? onFacebookPressed : null,
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
               side: BorderSide(color: Colors.grey.shade300),

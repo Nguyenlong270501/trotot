@@ -45,6 +45,12 @@ class FirebaseAppointmentRemoteDataSource
     if (appointment.tenantCancelReason != null) {
       updateData['tenantCancelReason'] = appointment.tenantCancelReason;
     }
+    if (appointment.cancelledBy != null) {
+      updateData['cancelledBy'] = appointment.cancelledBy;
+    }
+    if (appointment.acceptedBy != null) {
+      updateData['acceptedBy'] = appointment.acceptedBy;
+    }
     await _appointmentsRef.doc(appointment.appointmentId).update(updateData);
   }
 

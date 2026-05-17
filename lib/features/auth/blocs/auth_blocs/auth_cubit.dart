@@ -17,10 +17,18 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
   Future<void> _onAuthSuccess(UserModel user) async {
     emit(AuthenticationSuccessState(user));
     _listenToUser(user.userId);
+
+    final userId = user.userId.trim();
+    if (userId.isEmpty) return;
+
     try {
-      await FCMService().syncCurrentToken();
+      await FCMService().requestNotificationPermission(uid: userId);
     } catch (e, st) {
-      log('FCM sync failed after auth success: $e', stackTrace: st);
+      log(
+        'FCM permission/sync failed after auth success',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -143,12 +151,37 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
   }
 
   Future<void> signout() async {
+    // Lấy userId TRƯỚC khi đổi state, tránh mất reference
+    final currentUser = state is AuthenticationSuccessState
+        ? (state as AuthenticationSuccessState).user
+        : null;
+    final userId = currentUser?.userId.trim();
+
     try {
       emit(AuthenticationLoadingState());
-      await FCMService().removeTokenForCurrentUser();
+
+      // 1. Clear token trên Firestore trước (best-effort, không block logout)
+      if (userId != null && userId.isNotEmpty) {
+        try {
+          await FCMService().clearUserFcmTokensOnFirestore(userId);
+        } catch (e) {
+          log('⚠️ clearUserFcmTokensOnFirestore failed, continuing logout: $e');
+        }
+      }
+
+      // 2. Logout Firebase Auth
       await _authRepository.signOut();
-      _userSubscription?.cancel();
+
+      // 3. Xóa local token sau logout (best-effort)
+      try {
+        await FCMService().deleteLocalMessagingToken();
+      } catch (e) {
+        log('⚠️ deleteLocalMessagingToken failed, ignored: $e');
+      }
+
+      await _userSubscription?.cancel();
       _userSubscription = null;
+
       emit(UnAuthenticationState());
     } catch (e) {
       emit(AuthenticationErrorState(e.toString()));

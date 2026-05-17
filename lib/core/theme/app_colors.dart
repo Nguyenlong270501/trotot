@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 abstract class AppColors {
   AppColors._();
 
+  static const Color transparent = Colors.transparent;
+
   static const Color scaffoldBackground = Color(0xFFF7F6FA);
   static const Color appBarBackground = Colors.white;
   static const Color textPrimary = Color(0xFF1F1F2E);
@@ -14,6 +16,7 @@ abstract class AppColors {
   static const Color accent = Color(0xFF6062B8);
   static const Color accentDeep = Color(0xFF4A4A8B);
   static const Color accentIcon = Color(0xFF5E5CA8);
+  static const Color accentLight = Color(0xFFDCD8FF);
 
   /// Nền ô / chip
   static const Color surfaceMuted = Color(0xFFF1F1F5);

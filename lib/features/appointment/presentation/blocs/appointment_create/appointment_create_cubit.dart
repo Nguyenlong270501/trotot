@@ -94,7 +94,10 @@ class AppointmentCreateCubit extends Cubit<AppointmentCreateState> {
 
   Future<void> acceptRescheduled({required AppointmentModel appointment}) async {
     await updateAppointment(
-      appointment: appointment.copyWith(status: AppointmentStatus.accepted),
+      appointment: appointment.copyWith(
+        status: AppointmentStatus.accepted,
+        acceptedBy: 'tenant',
+      ),
     );
   }
 
@@ -127,6 +130,7 @@ class AppointmentCreateCubit extends Cubit<AppointmentCreateState> {
       appointment: appointment.copyWith(
         status: AppointmentStatus.rejected,
         tenantCancelReason: trimmedReason,
+        cancelledBy: 'tenant',
       ),
     );
   }

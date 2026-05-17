@@ -40,9 +40,8 @@ class FirebaseMessagesRemoteDataSource implements MessagesRemoteDataSource {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map(NotificationModel.fromFirestore)
-              .toList(),
+          (snapshot) =>
+              snapshot.docs.map(NotificationModel.fromFirestore).toList(),
         );
   }
 

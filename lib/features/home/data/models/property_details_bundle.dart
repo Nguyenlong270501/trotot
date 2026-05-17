@@ -1,7 +1,6 @@
 import 'property_model.dart';
 import 'room_model.dart';
 
-/// Property document + available rooms from a single realtime bundle.
 class PropertyDetailsBundle {
   const PropertyDetailsBundle({
     required this.property,

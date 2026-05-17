@@ -7,7 +7,6 @@ import '../../../../../../core/constants/app_sizes.dart';
 import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../core/theme/app_style.dart';
 
-/// Map chỉ được tạo khi widget này mount — tức là sau khi user vào màn chi tiết.
 class PropertyMapSection extends StatefulWidget {
   const PropertyMapSection({
     super.key,
@@ -23,18 +22,29 @@ class PropertyMapSection extends StatefulWidget {
 }
 
 class _PropertyMapSectionState extends State<PropertyMapSection> {
-  final Set<Marker> _markers = {};
+  var _mapReady = false;
+  Set<Marker>? _markers;
 
   @override
   void initState() {
     super.initState();
-    _markers.add(
-      Marker(
-        markerId: const MarkerId('propertyLocation'),
-        position: widget.location,
-        infoWindow: InfoWindow(title: widget.fullAddress),
-      ),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 400), () {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _mapReady = true;
+          _markers = {
+            Marker(
+              markerId: const MarkerId('propertyLocation'),
+              position: widget.location,
+              infoWindow: InfoWindow(title: widget.fullAddress),
+            ),
+          };
+        });
+      });
+    });
   }
 
   Future<void> _openGoogleMapsApp() async {
@@ -77,79 +87,21 @@ class _PropertyMapSectionState extends State<PropertyMapSection> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10.r),
-            child: Stack(
-              children: [
-                GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: widget.location,
-                    zoom: 15,
-                  ),
-                  zoomControlsEnabled: false,
-                  markers: _markers,
-                  mapType: MapType.normal,
-                  myLocationEnabled: false,
-                  myLocationButtonEnabled: false,
-                ),
-                Positioned(
-                  top: 10.h,
-                  right: 10.w,
-                  child: GestureDetector(
-                    onTap: () => _openFullScreenMap(context),
-                    child: Container(
-                      padding: EdgeInsets.all(8.w),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.open_in_full,
-                        size: 16.sp,
-                        color: Colors.black87,
-                      ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: _mapReady && _markers != null
+                  ? _InlineMap(
+                      key: const ValueKey('map'),
+                      location: widget.location,
+                      markers: _markers!,
+                      onOpenFullScreen: () => _openFullScreenMap(context),
+                      onOpenExternal: _openGoogleMapsApp,
+                    )
+                  : _MapPlaceholder(
+                      key: const ValueKey('map_placeholder'),
+                      fullAddress: widget.fullAddress,
+                      onOpenExternal: _openGoogleMapsApp,
                     ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 10.h,
-                  right: 10.w,
-                  child: ElevatedButton(
-                    onPressed: _openGoogleMapsApp,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black87,
-                      elevation: 4,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                        vertical: 8.h,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20.r),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.map_outlined,
-                          size: 16.sp,
-                          color: Colors.blue,
-                        ),
-                        SizedBox(width: 5.w),
-                        Text(
-                          'Mở Google Maps',
-                          style: TextStyle(fontSize: 12.sp),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
         ),
@@ -157,6 +109,166 @@ class _PropertyMapSectionState extends State<PropertyMapSection> {
         Text(
           widget.fullAddress,
           style: AppTypography.bold14(color: AppColors.textPrimary),
+        ),
+      ],
+    );
+  }
+}
+
+class _MapPlaceholder extends StatelessWidget {
+  const _MapPlaceholder({
+    super.key,
+    required this.fullAddress,
+    required this.onOpenExternal,
+  });
+
+  final String fullAddress;
+  final VoidCallback onOpenExternal;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: AppColors.surfaceMuted,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.map_outlined,
+                    size: 48.sp,
+                    color: AppColors.textMuted,
+                  ),
+                  AppSizes.gapH8,
+                  Text(
+                    fullAddress,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.medium14(color: AppColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 10.h,
+            right: 10.w,
+            child: ElevatedButton(
+              onPressed: onOpenExternal,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black87,
+                elevation: 4,
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.map_outlined, size: 16.sp, color: Colors.blue),
+                  SizedBox(width: 5.w),
+                  Text(
+                    'Mở Google Maps',
+                    style: TextStyle(fontSize: 12.sp),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineMap extends StatelessWidget {
+  const _InlineMap({
+    super.key,
+    required this.location,
+    required this.markers,
+    required this.onOpenFullScreen,
+    required this.onOpenExternal,
+  });
+
+  final LatLng location;
+  final Set<Marker> markers;
+  final VoidCallback onOpenFullScreen;
+  final VoidCallback onOpenExternal;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        GoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: location,
+            zoom: 15,
+          ),
+          zoomControlsEnabled: false,
+          markers: markers,
+          mapType: MapType.normal,
+          myLocationEnabled: false,
+          myLocationButtonEnabled: false,
+        ),
+        Positioned(
+          top: 10.h,
+          right: 10.w,
+          child: GestureDetector(
+            onTap: onOpenFullScreen,
+            child: Container(
+              padding: EdgeInsets.all(8.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.open_in_full,
+                size: 16.sp,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 10.h,
+          right: 10.w,
+          child: ElevatedButton(
+            onPressed: onOpenExternal,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black87,
+              elevation: 4,
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.map_outlined, size: 16.sp, color: Colors.blue),
+                SizedBox(width: 5.w),
+                Text(
+                  'Mở Google Maps',
+                  style: TextStyle(fontSize: 12.sp),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );

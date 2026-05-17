@@ -6,6 +6,28 @@ const NOTIFY_STATUSES = new Set([
   'success',
 ]);
 
+const LANDLORD_NOTIFY_STATUSES = new Set(['rejected', 'cancelled', 'accepted']);
+
+/**
+ * @param {Record<string, unknown>} data
+ * @param {'landlord' | 'tenant'} side
+ * @returns {string}
+ */
+function pickCancelReason(data, side) {
+  const by = (data.cancelledBy || '').toString().trim();
+  const legacy = (data.cancelReason || '').toString().trim();
+  const landlord = (data.landlordCancelReason || '').toString().trim();
+  const tenant = (data.tenantCancelReason || '').toString().trim();
+
+  if (by === 'landlord') return landlord || legacy;
+  if (by === 'tenant') return tenant || legacy;
+
+  if (side === 'landlord') {
+    return landlord || legacy;
+  }
+  return tenant || legacy;
+}
+
 /**
  * @param {FirebaseFirestore.Timestamp | Date | string | undefined} value
  * @returns {Date | null}
@@ -48,6 +70,8 @@ function formatAppointmentDateTime(value) {
 }
 
 /**
+ * Thông báo cho tenant khi trạng thái lịch hẹn đổi (chủ trọ xử lý).
+ *
  * @param {Record<string, unknown>} data
  * @param {string} appointmentId
  * @returns {{ title: string, content: string, pushData: Record<string, string> } | null}
@@ -58,10 +82,20 @@ function buildAppointmentNotification(data, appointmentId) {
     return null;
   }
 
+  const by = (data.cancelledBy || '').toString().trim();
+  if (by === 'tenant' && (status === 'cancelled' || status === 'rejected')) {
+    return null;
+  }
+
+  const acceptedBy = (data.acceptedBy || '').toString().trim();
+  if (acceptedBy === 'tenant' && status === 'accepted') {
+    return null;
+  }
+
   const propertyTitle = (data.propertyTitle || 'Bài đăng').toString().trim();
   const propertyId = (data.propertyId || '').toString().trim();
   const dateLabel = formatAppointmentDateTime(data.appointmentDate);
-  const cancelReason = (data.cancelReason || '').toString().trim();
+  const landlordReason = pickCancelReason(data, 'landlord');
 
   let title = 'Cập nhật lịch hẹn';
   let content = propertyTitle;
@@ -75,14 +109,14 @@ function buildAppointmentNotification(data, appointmentId) {
     break;
   case 'rejected':
     title = 'Lịch hẹn bị từ chối';
-    content = cancelReason ?
-      `${propertyTitle}. Lý do: ${cancelReason}` :
+    content = landlordReason ?
+      `${propertyTitle}. Lý do: ${landlordReason}` :
       propertyTitle;
     break;
   case 'cancelled':
     title = 'Lịch hẹn đã hủy';
-    content = cancelReason ?
-      `${propertyTitle}. Lý do: ${cancelReason}` :
+    content = landlordReason ?
+      `${propertyTitle}. Lý do: ${landlordReason}` :
       propertyTitle;
     break;
   case 'rescheduled':
@@ -111,6 +145,76 @@ function buildAppointmentNotification(data, appointmentId) {
       appointmentId: appointmentId.toString(),
       status,
       propertyId,
+      audience: 'tenant',
+    },
+  };
+}
+
+/**
+ * Thông báo cho chủ trọ khi người thuê từ chối / hủy (có tenantCancelReason).
+ *
+ * @param {Record<string, unknown>} data
+ * @param {string} appointmentId
+ * @returns {{ title: string, content: string, pushData: Record<string, string> } | null}
+ */
+function buildLandlordTenantActionNotification(data, appointmentId) {
+  const status = (data.status || '').toString().trim();
+  if (!LANDLORD_NOTIFY_STATUSES.has(status)) {
+    return null;
+  }
+
+  const by = (data.cancelledBy || '').toString().trim();
+  const acceptedBy = (data.acceptedBy || '').toString().trim();
+
+  if (status === 'accepted') {
+    if (acceptedBy !== 'tenant') {
+      return null;
+    }
+  } else {
+    if (by === 'landlord') {
+      return null;
+    }
+  }
+
+  const tenantReason = pickCancelReason(data, 'tenant');
+  const rawTenant = (data.tenantCancelReason || '').toString().trim();
+  if (status !== 'accepted' && !by && !rawTenant && !tenantReason) {
+    return null;
+  }
+
+  const propertyTitle = (data.propertyTitle || 'Bài đăng').toString().trim();
+  const propertyId = (data.propertyId || '').toString().trim();
+  const tenantName = (data.tenantName || 'Người thuê').toString().trim();
+
+  let title = 'Cập nhật lịch hẹn';
+  let content = propertyTitle;
+
+  if (status === 'accepted') {
+    title = 'Người thuê đồng ý lịch hẹn';
+    content = `${tenantName} — ${propertyTitle}`;
+  } else if (status === 'rejected') {
+    title = 'Người thuê từ chối lịch hẹn';
+    content = tenantReason ?
+      `${tenantName} — ${propertyTitle}. Lý do: ${tenantReason}` :
+      `${tenantName} — ${propertyTitle}`;
+  } else if (status === 'cancelled') {
+    title = 'Người thuê đã hủy lịch hẹn';
+    content = tenantReason ?
+      `${tenantName} — ${propertyTitle}. Lý do: ${tenantReason}` :
+      `${tenantName} — ${propertyTitle}`;
+  }
+
+  return {
+    title,
+    content,
+    pushData: {
+      type: 'appointment',
+      relatedType: 'appointment',
+      relatedId: appointmentId.toString(),
+      appointmentId: appointmentId.toString(),
+      status,
+      propertyId,
+      audience: 'landlord',
     },
   };
 }
@@ -163,5 +267,7 @@ function buildLandlordNewAppointmentNotification(data, appointmentId) {
 module.exports = {
   buildAppointmentNotification,
   buildLandlordNewAppointmentNotification,
+  buildLandlordTenantActionNotification,
+  pickCancelReason,
   NOTIFY_STATUSES,
 };

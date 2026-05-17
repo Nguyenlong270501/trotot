@@ -11,6 +11,7 @@ class NotificationModel {
     required this.relatedId,
     required this.isRead,
     required this.createdAt,
+    required this.expireAt,
     this.appointmentId,
     this.propertyId,
     this.status,
@@ -26,6 +27,7 @@ class NotificationModel {
   final String relatedId;
   final bool isRead;
   final DateTime createdAt;
+  final DateTime expireAt;
   final String? appointmentId;
   final String? propertyId;
   final String? status;
@@ -52,6 +54,8 @@ class NotificationModel {
       relatedId: (map['relatedId'] ?? '').toString(),
       isRead: map['isRead'] == true,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      expireAt: (map['expireAt'] as Timestamp?)?.toDate() ??
           DateTime.fromMillisecondsSinceEpoch(0),
       appointmentId: map['appointmentId']?.toString(),
       propertyId: map['propertyId']?.toString(),

@@ -86,20 +86,18 @@ class _NotificationItem extends StatelessWidget {
         decoration: BoxDecoration(
           color: isRead
               ? AppColors.surface.withValues(alpha: 0.6)
-              : AppColors.surface.withValues(alpha: 0.9),
+              : AppColors.success.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(14.r),
           border: isRead
               ? null
-              : Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+              : Border.all(color: AppColors.accentIcon.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
-              style: AppTypography.bold14(
-                color: AppColors.textPrimary,
-              ),
+              style: AppTypography.bold14(color: AppColors.textPrimary),
             ),
             SizedBox(height: 4.h),
             Text(

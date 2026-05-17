@@ -1,7 +1,11 @@
 const {onDocumentUpdated} = require('firebase-functions/v2/firestore');
 const logger = require('firebase-functions/logger');
-const {buildAppointmentNotification, NOTIFY_STATUSES} =
-  require('../notifications/appointmentMessages');
+const {
+  buildAppointmentNotification,
+  buildLandlordTenantActionNotification,
+  buildLandlordNewAppointmentNotification,
+  NOTIFY_STATUSES,
+} = require('../notifications/appointmentMessages');
 const {notifyUser} = require('../notifications/notifyUser');
 
 module.exports = onDocumentUpdated(
@@ -26,38 +30,84 @@ module.exports = onDocumentUpdated(
     if (beforeStatus === afterStatus) {
       return;
     }
-    if (afterStatus === 'pending' || !NOTIFY_STATUSES.has(afterStatus)) {
-      return;
-    }
 
     const tenantId = (after.tenantId || '').toString().trim();
-    if (!tenantId) {
+    const landlordId = (after.landlordId || '').toString().trim();
+
+    if (afterStatus === 'pending') {
+      if (landlordId && landlordId !== tenantId) {
+        const payload = buildLandlordNewAppointmentNotification(after, appointmentId);
+        if (payload) {
+          payload.title = 'Lịch hẹn vừa được cập nhật';
+          await notifyUser({
+            receiverId: landlordId,
+            title: payload.title,
+            content: payload.content,
+            type: 'appointment',
+            relatedType: 'appointment',
+            relatedId: appointmentId,
+            pushData: payload.pushData,
+          });
+        }
+      }
+      return;
+    }
+
+    if (!NOTIFY_STATUSES.has(afterStatus)) {
+      return;
+    }
+
+    if (tenantId) {
+      const tenantPayload = buildAppointmentNotification(after, appointmentId);
+      if (tenantPayload) {
+        const notificationId = await notifyUser({
+          receiverId: tenantId,
+          title: tenantPayload.title,
+          content: tenantPayload.content,
+          type: 'appointment',
+          relatedType: 'appointment',
+          relatedId: appointmentId,
+          pushData: tenantPayload.pushData,
+        });
+
+        if (notificationId) {
+          logger.info('onAppointmentUpdated: tenant notified', {
+            appointmentId,
+            tenantId,
+            status: afterStatus,
+            notificationId,
+          });
+        }
+      }
+    } else {
       logger.warn('onAppointmentUpdated: missing tenantId', {appointmentId});
-      return;
     }
 
-    const payload = buildAppointmentNotification(after, appointmentId);
-    if (!payload) {
-      return;
-    }
-
-    const notificationId = await notifyUser({
-      receiverId: tenantId,
-      title: payload.title,
-      content: payload.content,
-      type: 'appointment',
-      relatedType: 'appointment',
-      relatedId: appointmentId,
-      pushData: payload.pushData,
-    });
-
-    if (notificationId) {
-      logger.info('onAppointmentUpdated: notification sent', {
+    if (landlordId && landlordId !== tenantId) {
+      const landlordPayload = buildLandlordTenantActionNotification(
+        after,
         appointmentId,
-        tenantId,
-        status: afterStatus,
-        notificationId,
-      });
+      );
+      if (landlordPayload) {
+        const landlordNotificationId = await notifyUser({
+          receiverId: landlordId,
+          title: landlordPayload.title,
+          content: landlordPayload.content,
+          type: 'appointment',
+          relatedType: 'appointment',
+          relatedId: appointmentId,
+          pushData: landlordPayload.pushData,
+        });
+
+        if (landlordNotificationId) {
+          logger.info('onAppointmentUpdated: landlord notified (tenant action)', {
+            appointmentId,
+            landlordId,
+            status: afterStatus,
+            notificationId: landlordNotificationId,
+          });
+        }
+      }
     }
   },
 );

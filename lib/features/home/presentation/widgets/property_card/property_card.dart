@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../../core/constants/app_sizes.dart';
+import '../../../../../core/utils/property_image_precache.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_style.dart';
 import '../../../../../core/utils/property_helper.dart';
@@ -35,7 +36,12 @@ class PropertyCard extends StatelessWidget {
     final stats = _buildStats(first);
 
     return InkWell(
-      onTap: onTap,
+      onTap: onTap == null
+          ? null
+          : () {
+              precachePropertyCardHeroImage(context, images);
+              onTap!();
+            },
       child: Padding(
         padding: EdgeInsets.only(bottom: 8.h),
         child: Container(
@@ -100,6 +106,7 @@ class PropertyCard extends StatelessWidget {
                     AppSizes.gapH8,
 
                     InfoRowList(
+                      label: 'Loại hình: ',
                       value: [typeLabel],
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -193,7 +200,8 @@ class PropertyCard extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          ImageCarousel(images: images),
+          ImageCarousel(images: images, enableFullScreenOnTap: false),
+
           if (PropertyHelper.isNewListing(property.createdAt))
             Positioned(top: 10.h, right: 10.w, child: const _NewBadge()),
         ],

@@ -202,5 +202,9 @@ exports.syncPropertyReviewAggregates = onDocumentWritten(
 
 exports.onAppointmentCreated = require("./triggers/onAppointmentCreated");
 exports.onAppointmentUpdated = require("./triggers/onAppointmentUpdated");
+exports.onLandlordRequestUpdated =
+  require("./triggers/onLandlordRequestUpdated");
+exports.onPropertyApprovalStatusUpdated =
+  require("./triggers/onPropertyApprovalStatusUpdated");
 exports.resetUserPasswordToDefault =
   require("./callables/resetUserPasswordToDefault");

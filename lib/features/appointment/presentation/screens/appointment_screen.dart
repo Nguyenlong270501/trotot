@@ -22,7 +22,7 @@ import '../widgets/appointment_cancel_reasons_section.dart';
 import '../widgets/appointment_calendar.dart';
 import '../widgets/appointment_header.dart';
 import '../../data/models/appointment_model.dart';
-import '../../data/models/appointment_models.dart';
+import '../../data/models/booking_purpose.dart';
 import '../widgets/appointment_note_field.dart';
 import '../widgets/appointment_phone_field.dart';
 import '../widgets/appointment_property_brief_card.dart';
@@ -400,7 +400,7 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
                 isUpdateMode: createState.isUpdateMode,
                 showRescheduleResponse: isTenantResponder,
                 isSubmitEnabled:
-                    !isRescheduled &&
+                    !isFormLocked &&
                     (!createState.isUpdateMode ||
                         formState.hasUnsavedChanges(_purposeLabels)),
                 successLabel: createState.lastOperationWasUpdate
@@ -449,6 +449,9 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
                   final createCubit = context.read<AppointmentCreateCubit>();
                   if (isUpdate) {
                     final existing = createState.existingAppointment!;
+                    // Khi Tenant chủ động cập nhật lại lịch hẹn (VD: xin dời ngày khác),
+                    // trạng thái sẽ trở về pending để Chủ trọ nhận được và duyệt lại.
+                    const newStatus = AppointmentStatus.pending;
                     await createCubit.updateAppointment(
                       appointment: existing.copyWith(
                         appointmentDate: formState.appointmentDateTime,
@@ -461,6 +464,7 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
                             PropertyHelper.propertyLocationSubtitle(
                               widget.property,
                             ),
+                        status: newStatus,
                       ),
                     );
                     return;

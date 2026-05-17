@@ -120,6 +120,7 @@ class _SignInButton extends StatelessWidget {
           isEnabled: isFormValid && !isLoading, 
           onPressed: () {
             if (isFormValid) {
+              FocusScope.of(context).unfocus(); 
               final signInState = context.read<SignInFormCubit>().state;
               context.read<AuthenticationCubit>().signInWithEmail(
                 signInState.email.value,

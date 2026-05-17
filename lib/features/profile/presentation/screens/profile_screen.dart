@@ -1,8 +1,8 @@
+import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/route/app_routes.dart';
 import '../../../../core/widgets/app_alerts.dart';
 import '../../../auth/blocs/auth_blocs/auth_cubit.dart';
@@ -119,10 +119,24 @@ class _ProfileMenuSection extends StatefulWidget {
 }
 
 class _ProfileMenuSectionState extends State<_ProfileMenuSection> {
-  Future<void> _openNotificationSettings() async {
-    final opened = await openAppSettings();
-    if (!opened && mounted) {
-      Alerts.of(context).showError('Không thể mở cài đặt hệ thống.');
+  bool _isOpeningSettings = false;
+
+  Future<void> _openSystemSettings(AppSettingsType type) async {
+    if (_isOpeningSettings) return;
+    _isOpeningSettings = true;
+
+    try {
+      await AppSettings.openAppSettings(type: type);
+    } catch (_) {
+      if (!mounted) return;
+
+      final message = type == AppSettingsType.notification
+          ? 'Không thể mở cài đặt thông báo.'
+          : 'Không thể mở cài đặt vị trí.';
+
+      Alerts.of(context).showError(message);
+    } finally {
+      _isOpeningSettings = false;
     }
   }
 
@@ -161,13 +175,14 @@ class _ProfileMenuSectionState extends State<_ProfileMenuSection> {
               grouped: true,
               icon: Icons.notifications_none,
               title: 'Cài đặt thông báo',
-              onTap: _openNotificationSettings,
+              onTap: () => _openSystemSettings(AppSettingsType.notification),
             ),
             _ProfileMenuDivider(),
-            const MenuItem(
+            MenuItem(
               grouped: true,
               icon: Icons.location_on_outlined,
               title: 'Cài đặt vị trí',
+              onTap: () => _openSystemSettings(AppSettingsType.location),
             ),
           ],
         ),
@@ -259,15 +274,15 @@ class _LogoutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 200.w,
-      padding: EdgeInsets.symmetric(vertical: 14.h),
-      decoration: BoxDecoration(
-        color: AppColors.dangerSurface,
-        borderRadius: BorderRadius.circular(28.r),
-      ),
-      child: GestureDetector(
-        onTap: onTap,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 200.w,
+        padding: EdgeInsets.symmetric(vertical: 14.h),
+        decoration: BoxDecoration(
+          color: AppColors.dangerSurface,
+          borderRadius: BorderRadius.circular(28.r),
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

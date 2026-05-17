@@ -173,9 +173,11 @@ class FirebaseAuthDataSource {
 
   Future<UserModel> _getUserData(String uid) async {
     final doc = await _firestore.collection('users').doc(uid).get();
-    if (!doc.exists) {
-      throw Exception('user-data-not-found');
+
+    if (!doc.exists || doc.data() == null) {
+      throw Exception('user-not-found');
     }
+
     return UserModel.fromMap(doc.data()!);
   }
 
@@ -186,7 +188,7 @@ class FirebaseAuthDataSource {
 
     await _googleSignIn.initialize(
       serverClientId:
-        '1012146705116-ov659bo6stbcmdc0fri3vkh7ese7jr2l.apps.googleusercontent.com',
+          '1012146705116-ov659bo6stbcmdc0fri3vkh7ese7jr2l.apps.googleusercontent.com',
     );
     _isGoogleInitialized = true;
   }

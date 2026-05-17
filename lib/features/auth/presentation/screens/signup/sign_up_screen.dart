@@ -41,86 +41,96 @@ class SignUpScreen extends StatelessWidget {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 420),
                     child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          AppSizes.gapH16,
-                          Center(
-                            child: AnimatedTextKit(
-                              animatedTexts: [
-                                WavyAnimatedText(
-                                  'Đăng ký tài khoản',
-                                  textStyle: AppTypography.medium26(
-                                    color: Colors.black87,
-                                  ),
-                                  speed: const Duration(milliseconds: 200),
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        AppSizes.gapH16,
+                        Center(
+                          child: AnimatedTextKit(
+                            animatedTexts: [
+                              WavyAnimatedText(
+                                'Đăng ký tài khoản',
+                                textStyle: AppTypography.medium26(
+                                  color: Colors.black87,
                                 ),
-                              ],
-                              repeatForever: true,
-                            ),
-                          ),
-                          AppSizes.gapH8,
-                          Text(
-                            'Vui lòng nhập thông tin để tiếp tục',
-                            textAlign: TextAlign.center,
-                            style: AppTypography.medium16(
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          AppSizes.gapH24,
-                          const SignUpForm(),
-
-                          AppSizes.gapH24,
-
-                          const AuthDivider(),
-
-                          AppSizes.gapH24,
-
-                          // Google vs Facebook button
-                          AuthOauthSection(
-                            onGooglePressed: () {
-                              context.read<AuthenticationCubit>().signInWithGoogle();
-                            },
-                            onFacebookPressed: () {
-                              context.read<AuthenticationCubit>().signInWithFacebook();
-                            },
-                          ),
-
-                          AppSizes.gapH32,
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "Đã có tài khoản? ",
-                                style: AppTypography.medium14(
-                                  color: Colors.black54,
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: const Size(0, 0),
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: Text(
-                                  'Đăng nhập',
-                                  style: AppTypography.medium14(
-                                    color: Colors.black,
-                                  ),
-                                ),
+                                speed: const Duration(milliseconds: 200),
                               ),
                             ],
+                            repeatForever: true,
                           ),
-                        ],
-                      ),
+                        ),
+                        AppSizes.gapH8,
+                        Text(
+                          'Vui lòng nhập thông tin để tiếp tục',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.medium16(
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        AppSizes.gapH24,
+                        const SignUpForm(),
+
+                        AppSizes.gapH24,
+
+                        const AuthDivider(),
+
+                        AppSizes.gapH24,
+
+                        BlocBuilder<AuthenticationCubit, AuthenticationState>(
+                          builder: (context, authState) {
+                            final isLoading =
+                                authState is AuthenticationLoadingState;
+
+                            return AuthOauthSection(
+                              isEnabled: !isLoading,
+                              onGooglePressed: () {
+                                context
+                                    .read<AuthenticationCubit>()
+                                    .signInWithGoogle();
+                              },
+                              onFacebookPressed: () {
+                                context
+                                    .read<AuthenticationCubit>()
+                                    .signInWithFacebook();
+                              },
+                            );
+                          },
+                        ),
+
+                        AppSizes.gapH32,
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Đã có tài khoản? ",
+                              style: AppTypography.medium14(
+                                color: Colors.black54,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 0),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text(
+                                'Đăng nhập',
+                                style: AppTypography.medium14(
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
+            ),
           ],
         ),
       ),

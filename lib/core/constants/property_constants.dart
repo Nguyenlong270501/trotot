@@ -11,7 +11,6 @@ class PropertyConstants {
 
   static const List<String> cities = ['Hà Nội', 'TP. HCM'];
 
-
   static List<String> firestoreCityAliases(String city) {
     final value = city.trim();
     if (value.isEmpty) {
@@ -85,7 +84,6 @@ class PropertyConstants {
     return false;
   }
 
-  /// Bước 1 (Firestore + local thô): property [minRoomPrice, maxRoomPrice] giao với union bracket.
   static bool propertyPriceOverlapsSelectedBrackets({
     required int? minRoomPrice,
     required int? maxRoomPrice,
@@ -105,7 +103,6 @@ class PropertyConstants {
         maxRoomPrice >= bounds.minInclusive;
   }
 
-  /// Khoảng VND hợp nhất (min..max) của tất cả bracket đã chọn — dùng lọc thô Firestore (overlap).
   static ({int minInclusive, int maxInclusive})? priceBracketSearchUnion(
     Set<int> indexes,
   ) {

@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_style.dart';
-import '../../data/models/appointment_models.dart';
+import '../../data/models/booking_purpose.dart';
 
 class AppointmentPurposeGrid extends StatelessWidget {
   const AppointmentPurposeGrid({

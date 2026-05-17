@@ -42,7 +42,8 @@ class _UsernameField extends StatelessWidget {
           hintText: ' Nhập tên của bạn',
           keyboardType: TextInputType.name,
           textInputAction: TextInputAction.next,
-          onChanged: (value) => context.read<SignUpFormCubit>().usernameChanged(value),
+          onChanged: (value) =>
+              context.read<SignUpFormCubit>().usernameChanged(value),
           errorText: state.username.displayError != null
               ? "Tên người dùng từ 2 đến 20 ký tự"
               : null,
@@ -65,8 +66,11 @@ class _EmailField extends StatelessWidget {
           hintText: ' Nhập email của bạn',
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
-          onChanged: (value) => context.read<SignUpFormCubit>().emailChanged(value),
-          errorText: state.email.displayError != null ? "Nhập email hợp lệ" : null,
+          onChanged: (value) =>
+              context.read<SignUpFormCubit>().emailChanged(value),
+          errorText: state.email.displayError != null
+              ? "Nhập email hợp lệ"
+              : null,
         );
       },
     );
@@ -79,7 +83,7 @@ class _PasswordField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SignUpFormCubit, SignUpState>(
-      buildWhen: (previous, current) => 
+      buildWhen: (previous, current) =>
           previous.password != current.password ||
           previous.isPasswordObscure != current.isPasswordObscure,
       builder: (context, state) {
@@ -89,9 +93,13 @@ class _PasswordField extends StatelessWidget {
           keyboardType: TextInputType.visiblePassword,
           obscureText: state.isPasswordObscure,
           textInputAction: TextInputAction.done,
-          suffixIcon: state.isPasswordObscure ? Icons.visibility_off : Icons.visibility,
-          onSuffixIconTap: () => context.read<SignUpFormCubit>().changePasswordObscurity(),
-          onChanged: (value) => context.read<SignUpFormCubit>().passwordChanged(value),
+          suffixIcon: state.isPasswordObscure
+              ? Icons.visibility_off
+              : Icons.visibility,
+          onSuffixIconTap: () =>
+              context.read<SignUpFormCubit>().changePasswordObscurity(),
+          onChanged: (value) =>
+              context.read<SignUpFormCubit>().passwordChanged(value),
           errorText: state.password.displayError != null
               ? "Mật khẩu phải có ít nhất 8 ký tự, 1 chữ hoa và 1 số"
               : null,
@@ -107,10 +115,11 @@ class _ConfirmPasswordField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SignUpFormCubit, SignUpState>(
-      buildWhen: (previous, current) => 
+      buildWhen: (previous, current) =>
           previous.confirmPassword != current.confirmPassword ||
-          previous.isConfirmPasswordObscure != current.isConfirmPasswordObscure ||
-          previous.password != current.password, 
+          previous.isConfirmPasswordObscure !=
+              current.isConfirmPasswordObscure ||
+          previous.password != current.password,
       builder: (context, state) {
         return MyAppTextfield(
           label: 'Xác nhận mật khẩu',
@@ -118,11 +127,15 @@ class _ConfirmPasswordField extends StatelessWidget {
           keyboardType: TextInputType.visiblePassword,
           obscureText: state.isConfirmPasswordObscure,
           textInputAction: TextInputAction.done,
-          suffixIcon: state.isConfirmPasswordObscure ? Icons.visibility_off : Icons.visibility,
-          onSuffixIconTap: () => context.read<SignUpFormCubit>().changeConfirmPasswordObscurity(),
-          onChanged: (value) => context.read<SignUpFormCubit>().confirmPasswordChanged(value),
-          errorText: state.confirmPassword.displayError != null 
-              ? "Mật khẩu xác nhận không khớp" 
+          suffixIcon: state.isConfirmPasswordObscure
+              ? Icons.visibility_off
+              : Icons.visibility,
+          onSuffixIconTap: () =>
+              context.read<SignUpFormCubit>().changeConfirmPasswordObscurity(),
+          onChanged: (value) =>
+              context.read<SignUpFormCubit>().confirmPasswordChanged(value),
+          errorText: state.confirmPassword.displayError != null
+              ? "Mật khẩu xác nhận không khớp"
               : null,
         );
       },
@@ -135,8 +148,9 @@ class _SignUpButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    final isEnabled = context.select((SignUpFormCubit cubit) => cubit.state.isValid);
+    final isEnabled = context.select(
+      (SignUpFormCubit cubit) => cubit.state.isValid,
+    );
 
     return BlocBuilder<AuthenticationCubit, AuthenticationState>(
       builder: (context, state) {
@@ -144,9 +158,10 @@ class _SignUpButton extends StatelessWidget {
         return AppButton(
           text: 'Đăng ký',
           isLoading: isLoading,
-          isEnabled: isEnabled && !isLoading, 
+          isEnabled: isEnabled && !isLoading,
           onPressed: () {
             if (isEnabled) {
+              FocusScope.of(context).unfocus();
               final formState = context.read<SignUpFormCubit>().state;
               context.read<AuthenticationCubit>().signUpWithEmail(
                 formState.email.value,

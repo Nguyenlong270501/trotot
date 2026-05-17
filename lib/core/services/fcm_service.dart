@@ -1,19 +1,21 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../firebase_options.dart';
-import '../route/app_routes.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  log('📬 [Background] Nhận tin nhắn: ${message.messageId}');
+await Firebase.initializeApp(
+  options: DefaultFirebaseOptions.currentPlatform,
+);
+  log("📬 [Background] Nhận tin nhắn: ${message.messageId}");
 }
 
 class FCMService {
@@ -27,32 +29,35 @@ class FCMService {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
-  GoRouter? _router;
+  bool _initialized = false;
+  bool _isLoggingOut = false;
 
   static const String _channelId = 'quan_ly_tro_notification_channel';
-  static const String _channelName = 'Thông báo Trọ Tốt';
+  static const String _channelName = 'Thông báo Quản lý trọ';
 
   static const AndroidNotificationChannel _androidChannel =
       AndroidNotificationChannel(
         _channelId,
         _channelName,
         description:
-            'Kênh nhận thông báo về lịch hẹn và hệ thống Trọ Tốt',
+            'Kênh nhận thông báo về lịch hẹn, bài đăng và hệ thống Quản lý trọ',
         importance: Importance.max,
         playSound: true,
       );
 
-  Future<void> initialize({GoRouter? router}) async {
-    _router = router;
-
-    const androidInit = AndroidInitializationSettings('@drawable/ic_notification');
+  Future<void> initialize() async {
+    if (_initialized) return;
+    _initialized = true;
+    
+    const androidInit = AndroidInitializationSettings(
+      '@drawable/ic_notification',
+    );
     const initSettings = InitializationSettings(android: androidInit);
 
     await _localNotifications.initialize(
       initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse details) {
         log('👉 User CLICK (Foreground): ${details.payload}');
-        _openNotificationsInbox();
       },
     );
 
@@ -68,17 +73,20 @@ class FCMService {
       sound: true,
     );
 
-    await _syncCurrentToken();
 
-    _firebaseAuth.authStateChanges().listen((user) async {
+    _fcm.onTokenRefresh.listen((newToken) async {
+      if (_isLoggingOut) {
+        return;
+      }
+      final user = _firebaseAuth.currentUser;
       if (user == null) {
         return;
       }
-      await _syncCurrentToken();
-    });
+      if (!await _hasNotificationPermission()) {
+        return;
+      }
 
-    _fcm.onTokenRefresh.listen((newToken) async {
-      await _saveTokenForCurrentUser(newToken);
+      await syncTokenForUser(user.uid);
       log('FCM token refreshed and synced.');
     });
 
@@ -89,88 +97,159 @@ class FCMService {
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       log('👉 User CLICK (Background): ${message.data}');
-      _handleNotificationOpen(message);
     });
 
     final initialMessage = await _fcm.getInitialMessage();
     if (initialMessage != null) {
       log('👉 User CLICK (Terminated): ${initialMessage.data}');
-      _handleNotificationOpen(initialMessage);
     }
   }
 
-  void _handleNotificationOpen(RemoteMessage message) {
-    log('notificationId: ${message.data['notificationId']}');
-    _openNotificationsInbox();
-  }
-
-  void _openNotificationsInbox() {
-    final router = _router;
-    if (router == null) {
+  Future<void> requestNotificationPermission({String? uid}) async {
+    final targetUid = uid ?? _firebaseAuth.currentUser?.uid;
+    if (targetUid == null || targetUid.trim().isEmpty) {
       return;
     }
-    router.go(
-      RouteNames.homepage,
-      extra: <String, int>{
-        'initialBottomNavIndex': 2,
-        'initialMessagesTabIndex': 1,
-      },
+
+    try {
+      final status = await _requestNotificationAuthorization();
+      log('=== TRẠNG THÁI QUYỀN THÔNG BÁO HIỆN TẠI: $status ===');
+
+      if (_isAuthorized(status)) {
+        await syncTokenForUser(targetUid);
+        return;
+      }
+
+      log('Skip FCM sync: notification permission denied');
+    } catch (e, stackTrace) {
+      log(
+        '⚠️ requestNotificationPermission failed, ignored',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<AuthorizationStatus> _requestNotificationAuthorization() async {
+    if (Platform.isAndroid) {
+      final permissionStatus = await Permission.notification.request();
+      if (permissionStatus.isGranted || permissionStatus.isLimited) {
+        return AuthorizationStatus.authorized;
+      }
+      return AuthorizationStatus.denied;
+    }
+
+    final current = await _fcm.getNotificationSettings();
+    if (_isAuthorized(current.authorizationStatus)) {
+      return current.authorizationStatus;
+    }
+
+    if (current.authorizationStatus != AuthorizationStatus.notDetermined) {
+      return current.authorizationStatus;
+    }
+
+    final result = await _fcm.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
     );
+    return result.authorizationStatus;
   }
 
-  Future<void> removeTokenForCurrentUser() async {
-    final user = _firebaseAuth.currentUser;
-    if (user == null) {
+  bool _isAuthorized(AuthorizationStatus status) {
+    return status == AuthorizationStatus.authorized ||
+        status == AuthorizationStatus.provisional;
+  }
+
+
+  /// Xóa `fcmTokens` trên Firestore — gọi **trước** `signOut()` (còn đăng nhập).
+  Future<void> clearUserFcmTokensOnFirestore(String userId) async {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) {
       return;
     }
 
-    final token = await _fcm.getToken();
-    if (token == null || token.isEmpty) {
+    _isLoggingOut = true;
+    try {
+      log('🗑️ Attempting to clear FCM tokens for user $normalizedUserId...');
+      await _firestore.collection('users').doc(normalizedUserId).update(
+        {'fcmTokens': FieldValue.delete()},
+      );
+      log('✅ Cleared all FCM tokens for user $normalizedUserId');
+    } catch (e, stackTrace) {
+      _isLoggingOut = false;
+      log(
+        '❌ clearUserFcmTokensOnFirestore failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Xóa token FCM trên thiết bị — gọi **sau** `signOut()` để tránh `onTokenRefresh` ghi lại.
+  Future<void> deleteLocalMessagingToken() async {
+    try {
+      await _fcm.deleteToken();
+      log('✅ Local FCM token deleted');
+    } catch (e) {
+      log('⚠️ deleteToken failed, ignored: $e');
+    } finally {
+      _isLoggingOut = false;
+    }
+  }
+
+  /// ĐỒNG BỘ TOKEN CHỦ ĐỘNG: Đảm bảo an toàn, gọi sau khi đã kéo xong Data sạch từ Firestore về máy.
+  Future<bool> _hasNotificationPermission() async {
+    try {
+      final settings = await _fcm.getNotificationSettings();
+      return _isAuthorized(settings.authorizationStatus);
+    } catch (e) {
+      log('⚠️ getNotificationSettings failed: $e');
+      return false;
+    }
+  }
+
+  Future<void> syncTokenForUser(String uid) async {
+    if (_isLoggingOut) {
+      return;
+    }
+
+    final normalizedUid = uid.trim();
+    if (normalizedUid.isEmpty) {
+      return;
+    }
+
+    if (!await _hasNotificationPermission()) {
+      log('Skip FCM sync: notifications disabled or denied');
       return;
     }
 
     try {
-      await _firestore.collection('users').doc(user.uid).set(
-        {'fcmTokens': FieldValue.arrayRemove([token])},
+      final token = await _fcm.getToken();
+
+      if (token == null || token.trim().isEmpty) {
+        log('❌ FCM token is null or empty');
+        return;
+      }
+
+      final normalizedToken = token.trim();
+
+      await _firestore.collection('users').doc(normalizedUid).set(
+        {
+          'fcmTokens': FieldValue.arrayUnion([normalizedToken]),
+        },
         SetOptions(merge: true),
       );
-      log('FCM token removed for user ${user.uid}.');
-    } on FirebaseException catch (e) {
-      log('FCM removeToken failed: ${e.code} — ${e.message}');
-    } catch (e, st) {
-      log('FCM removeToken failed: $e', stackTrace: st);
-    }
-  }
 
-  Future<void> _syncCurrentToken() async {
-    final token = await _fcm.getToken();
-    await _saveTokenForCurrentUser(token);
-  }
-
-  Future<void> _saveTokenForCurrentUser(String? token) async {
-    final user = _firebaseAuth.currentUser;
-    if (user == null || token == null || token.isEmpty) {
-      return;
-    }
-
-    try {
-      await _firestore.collection('users').doc(user.uid).set(
-        {'fcmTokens': FieldValue.arrayUnion([token])},
-        SetOptions(merge: true),
-      );
-      log('FCM token synced for user ${user.uid}.');
-    } on FirebaseException catch (e) {
-      log('FCM saveToken failed: ${e.code} — ${e.message}');
-    } catch (e, st) {
-      log('FCM saveToken failed: $e', stackTrace: st);
+      log('✅ FCM token synced thành công cho user $normalizedUid');
+    } catch (e) {
+      log('❌ Lỗi chạy syncTokenForUser: $e');
     }
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
     final notification = message.notification;
-    if (notification == null) {
-      return;
-    }
+    if (notification == null) return;
 
     final androidDetails = AndroidNotificationDetails(
       _androidChannel.id,
@@ -195,21 +274,4 @@ class FCMService {
       payload: payloadData,
     );
   }
-
-  Future<bool> requestNotificationPermission() async {
-    final settings = await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    final granted =
-        settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional;
-    if (granted) {
-      await _syncCurrentToken();
-    }
-    return granted;
-  }
-
-  Future<void> syncCurrentToken() => _syncCurrentToken();
 }

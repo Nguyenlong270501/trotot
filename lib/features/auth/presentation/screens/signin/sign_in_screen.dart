@@ -83,16 +83,23 @@ class SignInScreen extends StatelessWidget {
                         const AuthDivider(),
                         AppSizes.gapH24,
 
-                        AuthOauthSection(
-                          onGooglePressed: () {
-                            context
-                                .read<AuthenticationCubit>()
-                                .signInWithGoogle();
-                          },
-                          onFacebookPressed: () {
-                            context
-                                .read<AuthenticationCubit>()
-                                .signInWithFacebook();
+                        BlocBuilder<AuthenticationCubit, AuthenticationState>(
+                          builder: (context, authState) {
+                            final isLoading =
+                                authState is AuthenticationLoadingState;
+                            return AuthOauthSection(
+                              isEnabled: !isLoading,
+                              onGooglePressed: () {
+                                context
+                                    .read<AuthenticationCubit>()
+                                    .signInWithGoogle();
+                              },
+                              onFacebookPressed: () {
+                                context
+                                    .read<AuthenticationCubit>()
+                                    .signInWithFacebook();
+                              },
+                            );
                           },
                         ),
                         AppSizes.gapH32,
