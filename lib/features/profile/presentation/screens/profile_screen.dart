@@ -14,6 +14,8 @@ import '../../../../core/theme/app_style.dart';
 import '../../blocs/landlord_status/landlord_status_cubit.dart';
 import '../../blocs/landlord_status/landlord_status_state.dart';
 import '../../data/models/landlord_request.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../../../../core/services/landlord_upload_worker.dart';
 import '../widgets/menu_item.dart';
 import '../widgets/profile_avatar.dart';
 
@@ -308,63 +310,105 @@ class _LandlordStatusMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LandlordStatusCubit, LandlordStatusState>(
-      builder: (context, state) {
-        if (state is LandlordStatusInitial || state is LandlordStatusError) {
-          return MenuItem(
-            grouped: true,
-            icon: Icons.add_business_rounded,
-            iconColor: Colors.orange,
-            title: 'Trở thành Chủ trọ',
-            onTap: () => context.pushNamed(RouteNames.landlordRegisterPage),
+    return FutureBuilder<Box>(
+      future: Hive.openBox(LandlordUploadWorker.boxName),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
           );
         }
 
-        if (state is LandlordStatusLoaded) {
-          final status = state.request.status;
+        final box = snapshot.data!;
+        return ValueListenableBuilder<Box>(
+          valueListenable: box.listenable(),
+          builder: (context, boxData, child) {
+            final authState = context.read<AuthenticationCubit>().state;
+            final uid = authState is AuthenticationSuccessState
+                ? authState.user.userId
+                : null;
 
-          switch (status) {
-            case LandlordRequestStatus.pending:
+            final isUploading = boxData.values.any((e) {
+              if (e is Map) {
+                return e['uid'] == uid;
+              }
+              return false;
+            });
+
+            if (isUploading) {
               return MenuItem(
                 grouped: true,
-                icon: Icons.hourglass_top_rounded,
-                iconColor: Colors.amber,
-                title: 'Hồ sơ đang chờ duyệt',
-                onTap: () => context.pushNamed(
-                  RouteNames.landlordRegisterPage,
-                  extra: state.request,
-                ),
+                icon: Icons.cloud_upload_rounded,
+                iconColor: Colors.blue,
+                title: 'Hồ sơ đang được tải lên...',
+                onTap: null,
               );
+            }
 
-            case LandlordRequestStatus.rejected:
-              return MenuItem(
-                grouped: true,
-                icon: Icons.error_outline_rounded,
-                iconColor: Colors.redAccent,
-                title: 'Hồ sơ bị từ chối (Cập nhật)',
-                onTap: () => context.pushNamed(
-                  RouteNames.landlordRegisterPage,
-                  extra: state.request,
-                ),
-              );
+            return BlocBuilder<LandlordStatusCubit, LandlordStatusState>(
+              builder: (context, state) {
+                if (state is LandlordStatusInitial ||
+                    state is LandlordStatusError) {
+                  return MenuItem(
+                    grouped: true,
+                    icon: Icons.add_business_rounded,
+                    iconColor: Colors.orange,
+                    title: 'Trở thành Chủ trọ',
+                    onTap: () =>
+                        context.pushNamed(RouteNames.landlordRegisterPage),
+                  );
+                }
 
-            case LandlordRequestStatus.approved:
-              return MenuItem(
-                grouped: true,
-                icon: Icons.playlist_add_check_rounded,
-                iconColor: Colors.green,
-                title: 'Hồ sơ đã được duyệt',
-                onTap: () => context.pushNamed(
-                  RouteNames.landlordRegisterPage,
-                  extra: state.request,
-                ),
-              );
-          }
-        }
+                if (state is LandlordStatusLoaded) {
+                  final status = state.request.status;
 
-        return const Padding(
-          padding: EdgeInsets.symmetric(vertical: 16),
-          child: Center(child: CircularProgressIndicator()),
+                  switch (status) {
+                    case LandlordRequestStatus.pending:
+                      return MenuItem(
+                        grouped: true,
+                        icon: Icons.hourglass_top_rounded,
+                        iconColor: Colors.amber,
+                        title: 'Hồ sơ đang chờ duyệt',
+                        onTap: () => context.pushNamed(
+                          RouteNames.landlordRegisterPage,
+                          extra: state.request,
+                        ),
+                      );
+
+                    case LandlordRequestStatus.rejected:
+                      return MenuItem(
+                        grouped: true,
+                        icon: Icons.error_outline_rounded,
+                        iconColor: Colors.redAccent,
+                        title: 'Hồ sơ bị từ chối (Cập nhật)',
+                        onTap: () => context.pushNamed(
+                          RouteNames.landlordRegisterPage,
+                          extra: state.request,
+                        ),
+                      );
+
+                    case LandlordRequestStatus.approved:
+                      return MenuItem(
+                        grouped: true,
+                        icon: Icons.playlist_add_check_rounded,
+                        iconColor: Colors.green,
+                        title: 'Hồ sơ đã được duyệt',
+                        onTap: () => context.pushNamed(
+                          RouteNames.landlordRegisterPage,
+                          extra: state.request,
+                        ),
+                      );
+                  }
+                }
+
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              },
+            );
+          },
         );
       },
     );

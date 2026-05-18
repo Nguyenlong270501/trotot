@@ -118,4 +118,17 @@ class LandlordRegisterRepository {
           return LandlordRequest.fromFirestore(doc.data()!);
         });
   }
+
+  Future<LandlordRequest?> getCurrentUserRequest() async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) {
+      return null;
+    }
+
+    final doc = await _firestore.collection('landlord_requests').doc(user.uid).get();
+    if (!doc.exists || doc.data() == null) {
+      return null;
+    }
+    return LandlordRequest.fromFirestore(doc.data()!);
+  }
 }

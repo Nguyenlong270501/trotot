@@ -28,4 +28,15 @@ class MessagesRepositoryImpl implements MessagesRepository {
       notificationId: notificationId,
     );
   }
+
+  @override
+  Future<Map<String, dynamic>?> getAppointmentNavigationData({
+    required String propertyId,
+    required String appointmentId,
+  }) {
+    return _remoteDataSource.getAppointmentNavigationData(
+      propertyId: propertyId,
+      appointmentId: appointmentId,
+    );
+  }
 }

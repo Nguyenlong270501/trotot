@@ -15,6 +15,12 @@ import '../../features/home/data/models/property_model.dart';
 import '../../features/home/data/models/room_model.dart';
 import '../../features/favorites/data/repositories/favorite_repository.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
+import '../../features/map_search/data/datasources/map_location_remote_data_source.dart';
+import '../../features/map_search/data/datasources/map_property_remote_data_source.dart';
+import '../../features/map_search/data/repositories/map_location_repository.dart';
+import '../../features/map_search/data/repositories/map_property_repository.dart';
+import '../../features/map_search/presentation/blocs/map_search/map_search_cubit.dart';
+import '../../features/map_search/presentation/screens/map_search_screen.dart';
 import '../../features/profile/presentation/screens/security_password/security_password_screen.dart';
 import '../../features/profile/presentation/screens/change_password/change_password_screen.dart';
 import '../../features/profile/blocs/change_password_form/change_password_form_cubit.dart';
@@ -35,7 +41,7 @@ import '../../features/auth/data/models/user.dart';
 import '../../features/auth/presentation/screens/signup/sign_up_screen.dart';
 import '../../features/auth/presentation/screens/signin/sign_in_screen.dart';
 import '../../features/auth/presentation/screens/forget_password/forget_password_screen.dart';
-import '../../features/home/presentation/screens/home/home_screen.dart';
+import '../../features/home/home_screen.dart';
 import '../../features/search/presentations/filter_results_screen.dart';
 import '../../features/search/presentations/search_screen/search_screen.dart';
 import '../../features/splash/splash_screen.dart';
@@ -53,6 +59,7 @@ class RouteNames {
   static const String appointmentPage = '/appointment';
   static const String securityPasswordPage = '/security-password';
   static const String changePasswordPage = '/change-password';
+  static const String mapSearchPage = '/map-search';
 }
 
 class AppRoutes {
@@ -108,8 +115,7 @@ class AppRoutes {
           var initialMessagesTabIndex = 0;
           final extra = state.extra;
           if (extra is Map<String, dynamic>) {
-            initialBottomNavIndex =
-                extra['initialBottomNavIndex'] as int? ?? 0;
+            initialBottomNavIndex = extra['initialBottomNavIndex'] as int? ?? 0;
             initialMessagesTabIndex =
                 extra['initialMessagesTabIndex'] as int? ?? 0;
           }
@@ -200,10 +206,7 @@ class AppRoutes {
                 ),
               ),
             ],
-            child: PropertyDetailsRouteShell(
-              property: property,
-              rooms: rooms,
-            ),
+            child: PropertyDetailsRouteShell(property: property, rooms: rooms),
           );
         },
       ),
@@ -212,6 +215,22 @@ class AppRoutes {
         path: RouteNames.searchPage,
         name: RouteNames.searchPage,
         builder: (context, state) => const SearchScreen(),
+      ),
+
+      GoRoute(
+        path: RouteNames.mapSearchPage,
+        name: RouteNames.mapSearchPage,
+        builder: (context, state) => BlocProvider<MapSearchCubit>(
+          create: (context) => MapSearchCubit(
+            locationRepository: MapLocationRepository(
+              remote: const GeolocatorMapLocationRemoteDataSource(),
+            ),
+            propertyRepository: MapPropertyRepository(
+              remote: FirebaseMapPropertyRemoteDataSource(),
+            ),
+          )..initialize(),
+          child: const MapSearchScreen(),
+        ),
       ),
 
       GoRoute(
@@ -264,7 +283,8 @@ class AppRoutes {
             child: AppointmentScreen(
               property: extra['property'] as PropertyModel,
               rooms: extra['rooms'] as List<RoomModel>,
-              initialAppointment: extra['initialAppointment'] is AppointmentModel
+              initialAppointment:
+                  extra['initialAppointment'] is AppointmentModel
                   ? extra['initialAppointment'] as AppointmentModel
                   : null,
             ),

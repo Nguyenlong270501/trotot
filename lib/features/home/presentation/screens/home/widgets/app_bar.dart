@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; 
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/route/app_routes.dart';
-import '../../../../core/theme/app_style.dart';
-import '../../../auth/data/models/user.dart';
-import '../../../auth/blocs/auth_blocs/auth_cubit.dart';
-import '../../../auth/blocs/auth_blocs/auth_state.dart';
+import '../../../../../../core/constants/app_sizes.dart';
+import '../../../../../../core/route/app_routes.dart';
+import '../../../../../../core/theme/app_style.dart';
+import '../../../../../auth/data/models/user.dart';
+import '../../../../../auth/blocs/auth_blocs/auth_cubit.dart';
+import '../../../../../auth/blocs/auth_blocs/auth_state.dart';
 
 class MyAppBar extends StatelessWidget {
   const MyAppBar({super.key});

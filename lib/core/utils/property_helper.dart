@@ -4,14 +4,11 @@ import '../../features/home/data/models/room_amenity.dart';
 import '../constants/rules_key.dart';
 import 'location_display.dart';
 
-
 class PropertyHelper {
-
   static String orPlaceholder(String? value, String placeholder) {
     final trimmed = value?.trim() ?? '';
     return trimmed.isEmpty ? placeholder : trimmed;
   }
-
 
   static String formatPrice(int value) {
     final s = value.toString();
@@ -59,16 +56,16 @@ class PropertyHelper {
   /// Chuyển đổi dữ liệu thô từ PropertyModel thành danh sách các icon và nhãn hiển thị
   static List<RoomAmenity> getAmenitiesAndRules(PropertyModel property) {
     final chips = <RoomAmenity>[];
-    
+
     // Giả định bồ có danh sách mẫu để map emoji
-    // final amenities = PropertyConstants.amenities; 
+    // final amenities = PropertyConstants.amenities;
 
     // Quét tiện ích cơ bản
     for (final label in property.facilities ?? []) {
       // Tìm emoji tương ứng hoặc dùng mặc định ✅
       // final matched = amenities.where((a) => a.label == label);
       // final emoji = matched.isNotEmpty ? matched.first.emoji : '✅';
-      chips.add(RoomAmenity('✅', label)); 
+      chips.add(RoomAmenity('✅', label));
     }
 
     // Quét nội quy quan trọng
@@ -84,14 +81,15 @@ class PropertyHelper {
     // Xử lý giờ giấc
     if (rules.contains(RuleKeys.freeTime)) {
       chips.add(const RoomAmenity('🕛', 'Giờ giấc tự do'));
-    } else if (property.curfewTime != null && property.curfewTime!.trim().isNotEmpty) {
+    } else if (property.curfewTime != null &&
+        property.curfewTime!.trim().isNotEmpty) {
       chips.add(RoomAmenity('🕛', 'Đóng cửa ${property.curfewTime}'));
     }
 
     if (rules.contains(RuleKeys.electricBike)) {
       chips.add(const RoomAmenity('🛵', 'Cho để xe điện'));
     }
-    
+
     return chips;
   }
 
@@ -100,7 +98,7 @@ class PropertyHelper {
   /// Tính toán khoảng giá từ danh sách phòng (Ví dụ: "Giá từ: 2 đến 5 triệu/tháng")
   static (String, String) priceRangeLabel(List<RoomModel> rooms) {
     if (rooms.isEmpty) return ('Giá: ', '—');
-    final prices = rooms.map((r) => r.price).toList(); 
+    final prices = rooms.map((r) => r.price).toList();
     final minPrice = prices.reduce((a, b) => a < b ? a : b);
     final maxPrice = prices.reduce((a, b) => a > b ? a : b);
 
@@ -114,8 +112,37 @@ class PropertyHelper {
     if (minPrice == maxPrice) {
       return ('Giá: ', '${toTrieu(minPrice)} triệu/tháng');
     } else {
-      return ('Giá từ: ', '${toTrieu(minPrice)} đến ${toTrieu(maxPrice)} triệu/tháng');
+      return (
+        'Giá từ: ',
+        '${toTrieu(minPrice)} đến ${toTrieu(maxPrice)} triệu/tháng',
+      );
     }
+  }
+
+  /// Nhãn giá ngắn trên marker bản đồ — ví dụ `5.5Tr`, `4 - 6 Tr`.
+  static String mapMarkerPriceLabel({int? minRoomPrice, int? maxRoomPrice}) {
+    final min = minRoomPrice ?? maxRoomPrice;
+    final max = maxRoomPrice ?? minRoomPrice;
+    if (min == null || max == null) {
+      return '—';
+    }
+
+    if (min == max) {
+      return '${_mapMarkerTrieu(min)}Tr';
+    }
+    return '${_mapMarkerTrieu(min)} - ${_mapMarkerTrieu(max)} Tr';
+  }
+
+  static String _mapMarkerTrieu(int priceVnd) {
+    final trieu = priceVnd / 1000000;
+    if (trieu >= 10) {
+      return trieu.round().toString();
+    }
+    final oneDecimal = (trieu * 10).round() / 10;
+    if (oneDecimal == oneDecimal.roundToDouble()) {
+      return oneDecimal.toInt().toString();
+    }
+    return oneDecimal.toString();
   }
 
   /// Định dạng nhãn tiền cọc

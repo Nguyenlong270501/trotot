@@ -68,5 +68,7 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Ứng dụng cần vị trí để tìm phòng trọ gần bạn và hiển thị trên bản đồ.</string>
 	</dict>
 </plist>

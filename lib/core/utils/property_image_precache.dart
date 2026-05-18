@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-/// Warms the first listing image before navigating to property details.
+
 void precachePropertyCardHeroImage(
   BuildContext context,
   List<String> imageUrls,

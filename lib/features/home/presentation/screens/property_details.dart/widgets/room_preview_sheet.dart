@@ -6,9 +6,9 @@ import '../../../../../../../core/theme/app_style.dart';
 import '../../../../../../core/utils/property_helper.dart';
 import '../../../../data/models/preview_stat.dart';
 import '../../../../data/models/room_model.dart';
-import '../../../widgets/property_card/emoji_lable.dart';
+import '../../../widgets/emoji_lable.dart';
 import '../../../../../../core/widgets/image_carousel.dart';
-import '../../../widgets/property_card/summary_chip.dart';
+import '../../../widgets/summary_chip.dart';
 
 Future<void> showRoomPreviewSheet(BuildContext context, RoomModel data) {
   return showModalBottomSheet<void>(

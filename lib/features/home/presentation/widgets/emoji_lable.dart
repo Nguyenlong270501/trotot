@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../../../../core/constants/app_sizes.dart';
-import '../../../../../../core/theme/app_colors.dart';
-import '../../../../../../core/theme/app_style.dart';
-import '../../../data/models/preview_stat.dart';
+import '../../../../../core/constants/app_sizes.dart';
+import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/theme/app_style.dart';
+import '../../data/models/preview_stat.dart';
 
 class EmojiLable extends StatelessWidget {
   const EmojiLable({super.key, required this.stats});

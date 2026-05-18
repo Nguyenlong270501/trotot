@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../../core/constants/app_sizes.dart';
-import '../../../../../core/utils/property_image_precache.dart';
-import '../../../../../core/theme/app_colors.dart';
-import '../../../../../core/theme/app_style.dart';
-import '../../../../../core/utils/property_helper.dart';
-import '../../../data/models/preview_stat.dart';
-import '../../../data/models/property_model.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/utils/property_image_precache.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_style.dart';
+import '../../../../core/utils/property_helper.dart';
+import '../../data/models/preview_stat.dart';
+import '../../data/models/property_model.dart';
 import 'emoji_lable.dart';
-import '../../../../../core/widgets/image_carousel.dart';
+import '../../../../core/widgets/image_carousel.dart';
 import 'info_row.dart';
 
 class PropertyCard extends StatelessWidget {
@@ -218,7 +218,7 @@ class _NewBadge extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
-        color: AppColors.appBarBackground.withValues(alpha: 0.8),
+        color: AppColors.orangeSoft,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(

@@ -19,7 +19,7 @@ import '../../../blocs/property_details_live/property_details_live_cubit.dart';
 import '../../../blocs/property_details_live/property_details_live_state.dart';
 import '../../../data/models/property_model.dart';
 import '../../../data/models/room_model.dart';
-import '../../widgets/property_card/room_mini_card.dart';
+import '../../widgets/room_mini_card.dart';
 import 'widgets/landlord_info_card.dart';
 import 'widgets/property_amenities_rules.dart';
 import 'widgets/property_bottom_action_bar.dart';

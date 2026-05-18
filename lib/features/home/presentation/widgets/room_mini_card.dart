@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../../../../core/theme/app_colors.dart';
-import '../../../../../../core/theme/app_style.dart';
+import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/theme/app_style.dart';
 
 class RoomMiniCard extends StatelessWidget {
   const RoomMiniCard({

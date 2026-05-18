@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:trotot/core/constants/app_sizes.dart';
-import 'package:trotot/features/home/presentation/widgets/property_card/info_row.dart';
+import 'package:trotot/features/home/presentation/widgets/info_row.dart';
 import '../../../../../../../core/theme/app_colors.dart';
 import '../../../../../../../core/theme/app_style.dart';
 import '../../../../../../core/utils/property_helper.dart';

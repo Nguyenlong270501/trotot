@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../../core/constants/app_sizes.dart';
-import '../../../../../core/mixins/notification_permission_lifecycle_mixin.dart';
-import '../../../../../core/widgets/aurora_background.dart';
-import '../../../../favorites/presentation/screens/favorites_tab.dart';
-import '../../../../messages/presentation/screens/messages_screen.dart';
-import '../../../blocs/home_suggested_rooms/home_suggested_rooms_cubit.dart';
-import '../../../data/repositories/home_repository.dart';
-import '../../../../profile/presentation/screens/profile_screen.dart';
-import '../../widgets/bottom_bar.dart';
-import 'home_main_tab.dart';
+import '../../core/constants/app_sizes.dart';
+import '../../core/mixins/notification_permission_lifecycle_mixin.dart';
+import '../../core/widgets/aurora_background.dart';
+import '../favorites/presentation/screens/favorites_tab.dart';
+import '../messages/presentation/screens/messages_screen.dart';
+import 'blocs/home_suggested_rooms/home_suggested_rooms_cubit.dart';
+import 'data/repositories/home_repository.dart';
+import '../profile/presentation/screens/profile_screen.dart';
+import 'presentation/screens/home/widgets/bottom_bar.dart';
+import 'presentation/screens/home/home_main_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({

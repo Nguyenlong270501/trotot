@@ -9,7 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'storage_service.dart';
 
 class LandlordUploadWorker {
-  static const String _boxName = 'landlord_upload_queue';
+  static const String boxName = 'landlord_upload_queue';
 
   static Future<void> saveDraftToQueue({
     required String uid,
@@ -21,7 +21,7 @@ class LandlordUploadWorker {
     required String cccdBackPath,
     required List<String> optionalDocPaths,
   }) async {
-    final box = await Hive.openBox(_boxName);
+    final box = await Hive.openBox(boxName);
 
     final appDir = await getApplicationDocumentsDirectory();
     final safeDir = Directory('${appDir.path}/pending_landlord');
@@ -63,7 +63,7 @@ class LandlordUploadWorker {
   }
 
   static Future<void> checkAndUploadDraft({void Function()? onSuccess}) async {
-    final box = await Hive.openBox(_boxName);
+    final box = await Hive.openBox(boxName);
 
     if (box.isEmpty) {
       log('[LandlordUploadWorker] Queue rỗng.');

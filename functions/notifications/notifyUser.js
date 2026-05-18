@@ -100,6 +100,9 @@ async function notifyUser({
   }
 
   const stringPushData = stringifyPushData(pushData);
+  const expiresAt = admin.firestore.Timestamp.fromDate(
+    new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+  );
   const docData = {
     receiverId: trimmedReceiverId,
     title: normalized.title,
@@ -109,6 +112,7 @@ async function notifyUser({
     relatedId: (relatedId || '').toString().trim(),
     isRead: false,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    expiresAt,
   };
 
   for (const key of PUSH_DATA_KEYS) {

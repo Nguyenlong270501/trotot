@@ -9,7 +9,7 @@ import '../../../core/theme/app_style.dart';
 import '../../home/data/models/room_model.dart';
 import '../blocs/room_filter/room_filter_cubit.dart';
 import '../blocs/room_filter/room_filter_state.dart';
-import '../../home/presentation/widgets/property_card/property_card.dart';
+import '../../home/presentation/widgets/property_card.dart';
 
 class FilterResultsScreen extends StatelessWidget {
   const FilterResultsScreen({super.key});

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/theme/app_style.dart';
+import '../../../../../../core/constants/app_sizes.dart';
+import '../../../../../../core/theme/app_style.dart';
 
 class CategoryItem extends StatelessWidget {
   const CategoryItem({

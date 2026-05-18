@@ -59,55 +59,52 @@ abstract class AppColors {
   static const Color warningSoft = Color(0xFFFFF4E0);
   static const Color infoSoft = Color(0xFFEAF2FF);
   static const Color errorSoft = Color(0xFFFDECEC);
-  static const Color orangePrimary = Color(0xFFE68500);
-  static const Color orangeSoft = Color(0xFFFFF4E0);
+  static const Color orangePrimary = Color(0xFFFF9800);
+  static const Color orangeSoft = Color(0xFFFFF3E0);
 
-
- 
   // ─── Background ──────────────────────────────────────────────────────────
   static const Color backgroundPrimary = Color(0xFFFFFFFF);
   static const Color backgroundSecondary = Color(0xFFF5F5F5);
   static const Color backgroundTertiary = Color(0xFFEFEFEF);
   static const Color imagePlaceholder = Color(0xFFE0E8F4);
- 
- 
+
   // ─── Border ───────────────────────────────────────────────────────────────
   static const Color borderTertiary = Color(0xFFE8E8E8);
   static const Color borderSecondary = Color(0xFFD0D0D0);
   static const Color borderPrimary = Color(0xFFB0B0B0);
- 
+
   // ─── Info (xanh dương) ────────────────────────────────────────────────────
   /// Dùng cho: avatar chủ nhà, badge "Mới đăng", spec icon diện tích/nước
   static const Color infoLight = Color(0xFFE6F1FB);
   static const Color infoBorder = Color(0xFFB5D4F4);
   static const Color info = Color(0xFF378ADD);
   static const Color infoDark = Color(0xFF0C447C);
- 
+
   // ─── Success (xanh lá) ────────────────────────────────────────────────────
   /// Dùng cho: badge "Còn phòng", tiện ích có sẵn, nút Đánh giá, spec icon wifi
   static const Color successLight = Color(0xFFEAF3DE);
   static const Color successBorder = Color(0xFFC0DD97);
   static const Color success = Color(0xFF639922);
   static const Color successDark = Color(0xFF27500A);
- 
+
   // ─── Warning (cam/vàng) ───────────────────────────────────────────────────
   /// Dùng cho: spec icon điện, gửi xe
   static const Color warningLight = Color(0xFFFAEEDA);
   static const Color warningBorder = Color(0xFFFAC775);
   static const Color warning = Color(0xFFBA7517);
   static const Color warningDark = Color(0xFF854F0B);
- 
+
   // ─── Danger (đỏ) ──────────────────────────────────────────────────────────
   /// Dùng cho: spec icon đặt cọc, badge hết hạn, nút xóa
   static const Color dangerLight = Color(0xFFFCEBEB);
   static const Color dangerBorder = Color(0xFFF7C1C1);
   static const Color danger = Color(0xFFE24B4A);
   static const Color dangerDark = Color(0xFFA32D2D);
- 
+
   // ─── Star ─────────────────────────────────────────────────────────────────
   /// Màu sao đánh giá
-  static const Color starColor = Color(0xFFEF9F27);
- 
+  static const Color starColor = Color(0xFFFFB020);
+
   // ─── Misc ─────────────────────────────────────────────────────────────────
   static const Color shimmer = Color(0xFFE8E8E8);
   static const Color shimmerHighlight = Color(0xFFF5F5F5);

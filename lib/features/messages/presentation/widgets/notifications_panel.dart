@@ -7,9 +7,51 @@ import '../../../../core/theme/app_style.dart';
 import '../blocs/notifications_feed/notifications_feed_cubit.dart';
 import '../blocs/notifications_feed/notifications_feed_state.dart';
 import '../utils/notification_time_label.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/route/app_routes.dart';
+import '../../data/repositories/messages_repository.dart';
+import '../../../profile/data/repositories/landlord_register_repository.dart';
 
 class NotificationsPanel extends StatelessWidget {
   const NotificationsPanel({super.key});
+
+  Future<void> _handleNotificationTap(
+    BuildContext context,
+    dynamic item,
+  ) async {
+    if (!item.isRead) {
+      context.read<NotificationsFeedCubit>().markRead(item.notificationId);
+    }
+
+    if (item.type == 'appointment' && item.propertyId != null) {
+      final propertyId = item.propertyId!.trim();
+      final appointmentId = item.appointmentId?.trim() ?? '';
+      if (propertyId.isEmpty) return;
+
+      final navData = await context
+          .read<MessagesRepository>()
+          .getAppointmentNavigationData(
+            propertyId: propertyId,
+            appointmentId: appointmentId,
+          );
+
+      if (!context.mounted || navData == null) return;
+
+      context.push(RouteNames.appointmentPage, extra: navData);
+    } else if (item.type == 'landlord_request') {
+      final request = await context
+          .read<LandlordRegisterRepository>()
+          .getCurrentUserRequest();
+
+      if (!context.mounted) return;
+
+      if (request != null) {
+        context.pushNamed(RouteNames.landlordRegisterPage, extra: request);
+      } else {
+        context.go(RouteNames.homepage, extra: {'initialBottomNavIndex': 3});
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,13 +88,7 @@ class NotificationsPanel extends StatelessWidget {
               description: item.content,
               time: formatNotificationTimeLabel(item.createdAt),
               isRead: item.isRead,
-              onTap: () {
-                if (!item.isRead) {
-                  context.read<NotificationsFeedCubit>().markRead(
-                    item.notificationId,
-                  );
-                }
-              },
+              onTap: () => _handleNotificationTap(context, item),
             );
           },
         );

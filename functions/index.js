@@ -206,5 +206,7 @@ exports.onLandlordRequestUpdated =
   require("./triggers/onLandlordRequestUpdated");
 exports.onPropertyApprovalStatusUpdated =
   require("./triggers/onPropertyApprovalStatusUpdated");
+exports.onPropertyPendingUpdateResolved =
+  require("./triggers/onPropertyPendingUpdateResolved");
 exports.resetUserPasswordToDefault =
   require("./callables/resetUserPasswordToDefault");

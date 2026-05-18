@@ -48,7 +48,8 @@ class LandlordRegisterState extends Equatable {
   bool get isFormComplete =>
       isValid &&
       (cccdFrontPath != null || cccdFrontUrl != null) &&
-      (cccdBackPath != null || cccdBackUrl != null);
+      (cccdBackPath != null || cccdBackUrl != null) &&
+      (optionalDocPaths.isNotEmpty || optionalDocUrls.isNotEmpty);
 
   bool get isEditingExistingRequest =>
       cccdFrontUrl != null || cccdBackUrl != null;

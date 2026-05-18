@@ -79,8 +79,56 @@ function buildPropertyApprovalNotification(data, propertyId) {
   };
 }
 
+/**
+ * Admin đã xử lý xong pendingUpdate (duyệt / từ chối chỉnh sửa).
+ * @param {Record<string, unknown>} after
+ * @param {string} propertyId
+ * @param {'update_approved' | 'update_rejected'} outcome
+ * @param {string} [rejectReason] — chỉ dùng khi outcome === update_rejected
+ * @returns {{ title: string, content: string, pushData: Record<string, string> } | null}
+ */
+function buildPropertyPendingUpdateNotification(
+  after,
+  propertyId,
+  outcome,
+  rejectReason,
+) {
+  const propertyTitle = (after.title || 'Bài đăng').toString().trim();
+  const reason = (rejectReason || '').toString().trim();
+
+  let title = 'Cập nhật bài đăng';
+  let content = propertyTitle;
+  let status = 'update_approved';
+
+  if (outcome === 'update_rejected') {
+    title = 'Chỉnh sửa bài đăng bị từ chối';
+    content = reason ?
+      `${propertyTitle}. Lý do: ${reason}` :
+      `${propertyTitle}. Chỉnh sửa chưa được duyệt.`;
+    status = 'update_rejected';
+  } else {
+    title = 'Chỉnh sửa bài đăng đã được duyệt';
+    content = propertyTitle;
+    status = 'update_approved';
+  }
+
+  return {
+    title,
+    content,
+    pushData: {
+      type: 'property',
+      relatedType: 'property',
+      relatedId: propertyId.toString(),
+      propertyId: propertyId.toString(),
+      status,
+      audience: 'landlord',
+    },
+  };
+}
+
 module.exports = {
   buildLandlordRequestNotification,
   buildPropertyApprovalNotification,
+  buildPropertyPendingUpdateNotification,
   NOTIFY_STATUSES,
 };

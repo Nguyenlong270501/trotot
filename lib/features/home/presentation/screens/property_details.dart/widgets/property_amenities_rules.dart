@@ -6,7 +6,7 @@ import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../core/theme/app_style.dart';
 import '../../../../data/models/amenity_option.dart';
 import '../../../../data/models/property_model.dart';
-import '../../../widgets/property_card/summary_chip.dart';
+import '../../../widgets/summary_chip.dart';
 
 class PropertyAmenitiesSection extends StatelessWidget {
   final List<String>? facilities;

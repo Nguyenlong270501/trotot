@@ -7,7 +7,7 @@ import '../../../../../../core/theme/app_style.dart';
 import '../../../../../../core/utils/property_helper.dart';
 import '../../../../data/models/property_model.dart';
 import '../../../../data/models/room_model.dart';
-import '../../../widgets/property_card/info_row.dart';
+import '../../../widgets/info_row.dart';
 
 class PropertyHeaderInfo extends StatelessWidget {
   final PropertyModel property;

@@ -11,4 +11,9 @@ abstract class MessagesRepository {
   });
 
   Future<void> markNotificationRead({required String notificationId});
+
+  Future<Map<String, dynamic>?> getAppointmentNavigationData({
+    required String propertyId,
+    required String appointmentId,
+  });
 }

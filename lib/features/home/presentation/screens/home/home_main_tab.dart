@@ -11,10 +11,10 @@ import '../../../blocs/home_suggested_rooms/home_suggested_rooms_cubit.dart';
 import '../../../blocs/home_suggested_rooms/home_suggested_rooms_state.dart';
 import '../../../../search/blocs/room_filter/room_filter_cubit.dart';
 import '../../../data/models/property_model.dart';
-import '../../widgets/app_bar.dart';
-import '../../widgets/category_item.dart';
-import '../../widgets/search_bar.dart';
-import '../../widgets/property_card/property_card.dart';
+import 'widgets/app_bar.dart';
+import 'widgets/category_item.dart';
+import 'widgets/search_bar.dart';
+import '../../widgets/property_card.dart';
 
 class HomeMainTab extends StatelessWidget {
   const HomeMainTab({super.key});
@@ -39,53 +39,56 @@ class HomeMainTab extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         child: Padding(
-            padding: EdgeInsets.fromLTRB(10.h, 10.h, 10.h, 0),
-            child: Column(
-              children: [
-                BlocSelector<
-                  HomeSuggestedRoomsCubit,
-                  HomeSuggestedRoomsState,
-                  String
-                >(
-                  selector: (state) => state.selectedCity,
-                  builder: (context, selectedCity) {
-                    return SearchBarCard(
-                      onTap: () {
-                        context.read<RoomFilterCubit>().setCity(
-                          selectedCity,
-                          resetWard: true,
-                        );
-                        context.push(RouteNames.searchPage);
-                      },
-                      locationName: selectedCity,
-                      cityOptions: PropertyConstants.cities,
-                      onCitySelected: (city) => context
-                          .read<HomeSuggestedRoomsCubit>()
-                          .changeCity(city),
-                    );
-                  },
+          padding: EdgeInsets.fromLTRB(10.h, 10.h, 10.h, 0),
+          child: Column(
+            children: [
+              BlocSelector<
+                HomeSuggestedRoomsCubit,
+                HomeSuggestedRoomsState,
+                String
+              >(
+                selector: (state) => state.selectedCity,
+                builder: (context, selectedCity) {
+                  return SearchBarCard(
+                    onTap: () {
+                      context.read<RoomFilterCubit>().setCity(
+                        selectedCity,
+                        resetWard: true,
+                      );
+                      context.push(RouteNames.searchPage);
+                    },
+                    locationName: selectedCity,
+                    cityOptions: PropertyConstants.cities,
+                    onMapTap: () {
+                      context.push(RouteNames.mapSearchPage);
+                    },
+                    onCitySelected: (city) => context
+                        .read<HomeSuggestedRoomsCubit>()
+                        .changeCity(city),
+                  );
+                },
+              ),
+              AppSizes.gapH12,
+              Container(
+                padding: EdgeInsets.fromLTRB(10.h, 10.h, 10.h, 10.h),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceCard.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(28),
                 ),
-                AppSizes.gapH12,
-                Container(
-                  padding: EdgeInsets.fromLTRB(10.h, 10.h, 10.h, 10.h),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceCard.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppSizes.gapH8,
-                      const _CategoryLabel(),
-                      AppSizes.gapH16,
-                      const _SuggestionSection(),
-                    ],
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppSizes.gapH8,
+                    const _CategoryLabel(),
+                    AppSizes.gapH16,
+                    const _SuggestionSection(),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
     );
   }
 }
@@ -137,7 +140,8 @@ class _CategoryLabel extends StatelessWidget {
                 CategoryItem(
                   icon: _categories[i].icon,
                   label: _categories[i].label,
-                  isActive: selectedCategory ==
+                  isActive:
+                      selectedCategory ==
                       PropertyConstants.normalizePropertyType(
                         _categories[i].propertyType,
                       ),

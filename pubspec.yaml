@@ -52,7 +52,6 @@ dependencies:
   equatable: ^2.0.8
   dartz: ^0.10.1
   animated_text_kit: ^4.3.0
-  google_nav_bar: ^5.0.7
   formz: ^0.8.0
   image_picker: ^1.2.1
   firebase_storage: ^13.3.0
@@ -67,6 +66,8 @@ dependencies:
   url_launcher: ^6.3.2
   diacritic: ^0.1.6
   app_settings: ^7.0.0
+  maplibre_gl: ^0.26.1
+  geolocator: ^14.0.1
 
 dev_dependencies:
   flutter_test:
