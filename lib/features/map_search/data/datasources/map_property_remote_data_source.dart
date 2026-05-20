@@ -4,7 +4,7 @@ import 'package:collection/collection.dart';
 import '../../../../core/utils/property_helper.dart';
 import '../../../home/data/models/property_model.dart';
 import '../../../home/data/models/room_model.dart';
-import '../../map_search_constants.dart';
+import '../../../../core/constants/map_search_constants.dart';
 import '../models/map_property_pin.dart';
 import '../models/map_visible_bounds.dart';
 

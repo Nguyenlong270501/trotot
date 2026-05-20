@@ -6,7 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_colors.dart';
 
-/// Renders a price pill as PNG bytes for MapLibre [addImage].
+/// Renders a price pill as PNG bytes for MapLibre addImage.
 abstract final class MapPriceLabelBitmap {
   static final Map<String, Uint8List> _cache = {};
 
@@ -33,7 +33,6 @@ abstract final class MapPriceLabelBitmap {
     final fontSize = 30.sp;
     const devicePixelRatio = 3.0;
 
-    // Selected: dark pill (card sits directly below — visual link like Airbnb-style maps).
     final backgroundColor = selected ? AppColors.textPrimary : Colors.white;
     final textColor = selected ? Colors.white : AppColors.textPrimary;
 
@@ -94,7 +93,11 @@ abstract final class MapPriceLabelBitmap {
     final picture = recorder.endRecording();
     final image = await picture.toImage(width, height);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    final bytes = byteData!.buffer.asUint8List();
+    final bytes = byteData?.buffer.asUint8List();
+    if (bytes == null) {
+      throw StateError('Unable to encode map price label bitmap.');
+    }
+
     _cache[cacheKey] = bytes;
     return bytes;
   }

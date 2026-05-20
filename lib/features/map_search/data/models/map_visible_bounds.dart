@@ -1,6 +1,6 @@
 import 'package:maplibre_gl/maplibre_gl.dart';
 
-import '../../map_search_constants.dart';
+import '../../../../core/constants/map_search_constants.dart';
 
 /// Geographic rectangle for Firestore bounds queries (no map controller dependency).
 class MapVisibleBounds {

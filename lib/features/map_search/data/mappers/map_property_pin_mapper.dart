@@ -1,6 +1,6 @@
 import '../../../home/data/models/property_model.dart';
 import '../../../../core/utils/property_helper.dart';
-import '../../map_search_constants.dart';
+import '../../../../core/constants/map_search_constants.dart';
 import '../models/map_property_pin.dart';
 
 abstract final class MapPropertyPinMapper {

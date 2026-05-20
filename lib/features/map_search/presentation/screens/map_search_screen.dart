@@ -13,15 +13,15 @@ import '../../../search/blocs/room_filter/room_filter_state.dart';
 import '../../data/models/goong_place_detail_model.dart';
 import '../../data/models/map_property_pin.dart';
 import '../../data/models/map_visible_bounds.dart';
-import '../../map_search_constants.dart';
+import '../../../../core/constants/map_search_constants.dart';
 import '../blocs/map_place_search/map_place_search_cubit.dart';
 import '../blocs/map_search/map_search_cubit.dart';
 import '../blocs/map_search/map_search_state.dart';
+import '../map/map_location_pin_marker.dart';
+import '../map/map_property_marker_registry.dart';
 import '../widgets/map_filter_bottom_sheet.dart';
 import '../widgets/map_filter_result_bar.dart';
 import '../widgets/map_loading_overlay.dart';
-import '../widgets/map_location_pin_marker.dart';
-import '../widgets/map_property_marker_registry.dart';
 import '../widgets/map_search_map_controls.dart';
 import '../widgets/map_search_top_bar.dart';
 import '../widgets/map_search_view.dart';
@@ -40,7 +40,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   var _styleLoaded = false;
   MapSearchState? _pendingMapState;
   Symbol? _locationSymbol;
-  DateTime? _lastSymbolTapAt;
+  DateTime? _lastMarkerTapAt;
   var _suppressRegionSearch = false;
   var _centeringSelection = false;
   double _latestZoom = _mapZoom;
@@ -97,21 +97,26 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
 
   void _onMapCreated(MapLibreMapController controller) {
     _mapController = controller;
-    controller.onSymbolTapped.add(_onSymbolTapped);
+    controller.onFeatureTapped.add(_onFeatureTapped);
     _tryApplyMapState();
   }
 
-  void _onSymbolTapped(Symbol symbol) {
-    final propertyId = _propertyMarkerRegistry.propertyIdFor(symbol);
-    if (propertyId == null || !mounted) {
+  void _onFeatureTapped(
+    Point<double> point,
+    LatLng latLng,
+    String id,
+    String layerId,
+    Annotation? annotation,
+  ) {
+    if (layerId != MapPropertyMarkerRegistry.layerId || !mounted) {
       return;
     }
-    _lastSymbolTapAt = DateTime.now();
-    context.read<MapSearchCubit>().selectProperty(propertyId);
+    _lastMarkerTapAt = DateTime.now();
+    unawaited(_selectPropertyFeatureAt(point, fallbackPropertyId: id));
   }
 
-  bool _isWithinSymbolTapGracePeriod() {
-    final tappedAt = _lastSymbolTapAt;
+  bool _isWithinMarkerTapGracePeriod() {
+    final tappedAt = _lastMarkerTapAt;
     if (tappedAt == null) {
       return false;
     }
@@ -127,8 +132,88 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     cubit.clearSelection();
   }
 
+  Future<bool> _selectPropertyFeatureAt(
+    Point<double> point, {
+    String? fallbackPropertyId,
+  }) async {
+    final controller = _mapController;
+    if (controller == null || !_styleLoaded || !mounted) {
+      return false;
+    }
+
+    try {
+      final features = await controller.queryRenderedFeatures(
+        point,
+        [MapPropertyMarkerRegistry.layerId],
+        null,
+      );
+      for (final feature in features) {
+        final propertyId = _propertyIdFromRenderedFeature(feature);
+        if (propertyId != null &&
+            _propertyMarkerRegistry.containsProperty(propertyId)) {
+          _lastMarkerTapAt = DateTime.now();
+          if (!mounted) {
+            return true;
+          }
+          context.read<MapSearchCubit>().selectProperty(propertyId);
+          return true;
+        }
+      }
+    } catch (_) {}
+
+    if (fallbackPropertyId != null &&
+        _propertyMarkerRegistry.containsProperty(fallbackPropertyId)) {
+      _lastMarkerTapAt = DateTime.now();
+      context.read<MapSearchCubit>().selectProperty(fallbackPropertyId);
+      return true;
+    }
+
+    return false;
+  }
+
+  String? _propertyIdFromRenderedFeature(Object? feature) {
+    if (feature is! Map) {
+      return null;
+    }
+
+    final directPropertyId = _stringValue(feature['propertyId']);
+    if (directPropertyId != null) {
+      return directPropertyId;
+    }
+
+    final properties = feature['properties'];
+    final fromProperties = _propertyIdFromMap(properties);
+    if (fromProperties != null) {
+      return fromProperties;
+    }
+
+    final attributes = feature['attributes'];
+    return _propertyIdFromMap(attributes);
+  }
+
+  String? _propertyIdFromMap(Object? value) {
+    if (value is! Map) {
+      return null;
+    }
+    return _stringValue(value['propertyId']);
+  }
+
+  String? _stringValue(Object? value) {
+    if (value is String && value.isNotEmpty) {
+      return value;
+    }
+    return null;
+  }
+
   void _onMapClick(Point<double> point, LatLng latLng) {
-    if (_isWithinSymbolTapGracePeriod()) {
+    unawaited(_handleMapClick(point));
+  }
+
+  Future<void> _handleMapClick(Point<double> point) async {
+    if (_isWithinMarkerTapGracePeriod()) {
+      return;
+    }
+    if (await _selectPropertyFeatureAt(point)) {
       return;
     }
     _placeSearchTopBarController.unfocus();
@@ -137,8 +222,26 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
 
   void _onStyleLoaded() {
     _styleLoaded = true;
+    _propertyMarkerRegistry.resetStyle();
+    unawaited(_restorePropertyMarkersForStyle());
     _tryApplyMapState();
     _scheduleRegionSearch(forceBounds: true);
+  }
+
+  Future<void> _restorePropertyMarkersForStyle() async {
+    final controller = _mapController;
+    final cubit = _mapSearchCubit;
+    if (controller == null || cubit == null || !_styleLoaded) {
+      return;
+    }
+
+    try {
+      await _propertyMarkerRegistry.prepareForStyle(
+        controller,
+        cubit.state.properties,
+        selectedPropertyId: cubit.state.selectedPropertyId,
+      );
+    } catch (_) {}
   }
 
   void _onCameraMove(CameraPosition position) {
