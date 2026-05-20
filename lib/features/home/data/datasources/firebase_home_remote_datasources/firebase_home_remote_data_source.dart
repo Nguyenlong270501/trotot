@@ -17,6 +17,8 @@ class FirebaseHomeRemoteDataSource implements HomeRemoteDataSource {
 
   final FirebaseFirestore _firestore;
 
+  final Map<String, _CachedPropertyRooms> _roomsCacheByPropertyId = {};
+
   static const int suggestedPropertiesLimit = 10;
   static const int searchFilterPoolPageSize = 50;
   static const int searchFilterWatchLimit = 120;
@@ -290,30 +292,84 @@ class FirebaseHomeRemoteDataSource implements HomeRemoteDataSource {
         : <String, dynamic>{};
 
     data['propertyId'] = doc.id;
+    final updatedAt = _readUpdatedAt(data['updatedAt']);
 
+    List<RoomModel> rooms;
+    if (criteria == null) {
+      final cached = _roomsCacheByPropertyId[doc.id];
+      if (cached != null && cached.updatedAt == updatedAt) {
+        rooms = cached.rooms;
+      } else {
+        rooms = await _fetchAvailableRooms(
+          doc: doc,
+          propertyId: doc.id,
+          landlordId: data['landlordId']?.toString() ?? '',
+        );
+        _roomsCacheByPropertyId[doc.id] = _CachedPropertyRooms(
+          updatedAt: updatedAt,
+          rooms: rooms,
+        );
+      }
+    } else {
+      final roomBounds = _roomPriceBoundsForCriteria(criteria);
+      rooms = await _fetchAvailableRooms(
+        doc: doc,
+        propertyId: doc.id,
+        landlordId: data['landlordId']?.toString() ?? '',
+        minPrice: roomBounds?.minInclusive,
+        maxPrice: roomBounds?.maxInclusive,
+      );
+    }
+
+    return PropertyModel.fromMap(data).copyWith(rooms: rooms);
+  }
+
+  static DateTime _readUpdatedAt(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  Future<List<RoomModel>> _fetchAvailableRooms({
+    required DocumentSnapshot<Map<String, dynamic>> doc,
+    required String propertyId,
+    required String landlordId,
+    int? minPrice,
+    int? maxPrice,
+  }) async {
     var roomsQuery = doc.reference
         .collection('rooms')
         .where('isAvailable', isEqualTo: true);
-    final roomBounds = criteria == null
-        ? null
-        : _roomPriceBoundsForCriteria(criteria);
-    if (roomBounds != null) {
+    if (minPrice != null && maxPrice != null) {
       roomsQuery = roomsQuery
-          .where('price', isGreaterThanOrEqualTo: roomBounds.minInclusive)
-          .where('price', isLessThanOrEqualTo: roomBounds.maxInclusive);
+          .where('price', isGreaterThanOrEqualTo: minPrice)
+          .where('price', isLessThanOrEqualTo: maxPrice);
     }
     final roomsSnapshot = await roomsQuery.get();
 
     final rooms = roomsSnapshot.docs.map((roomDoc) {
       final roomData = Map<String, dynamic>.from(roomDoc.data());
       roomData['roomId'] = roomDoc.id;
-      roomData['propertyId'] = data['propertyId'];
-      roomData['landlordId'] = data['landlordId'];
+      roomData['propertyId'] = propertyId;
+      roomData['landlordId'] = landlordId;
       return RoomModel.fromMap(roomData);
     }).toList();
 
     rooms.sort((a, b) => compareNatural(a.roomName, b.roomName));
-
-    return PropertyModel.fromMap(data).copyWith(rooms: rooms);
+    return rooms;
   }
+}
+
+class _CachedPropertyRooms {
+  const _CachedPropertyRooms({
+    required this.updatedAt,
+    required this.rooms,
+  });
+
+  final DateTime updatedAt;
+  final List<RoomModel> rooms;
 }

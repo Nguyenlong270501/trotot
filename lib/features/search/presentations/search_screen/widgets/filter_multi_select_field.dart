@@ -12,7 +12,6 @@ import 'filter_sheet_options.dart';
 class FilterMultiSelectField extends StatelessWidget {
   const FilterMultiSelectField({
     super.key,
-    required this.label,
     required this.sheetType,
     required this.sheetTitle,
     required this.searchHint,
@@ -23,7 +22,6 @@ class FilterMultiSelectField extends StatelessWidget {
     required this.isWard,
   });
 
-  final String label;
   final FilterSheetType sheetType;
   final String sheetTitle;
   final String searchHint;
@@ -84,11 +82,6 @@ class FilterMultiSelectField extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.r),
         child: InputDecorator(
           decoration: InputDecoration(
-            labelText: label,
-            labelStyle: AppTypography.medium16(color: AppColors.textPrimary),
-            floatingLabelStyle: AppTypography.medium16(
-              color: AppColors.textPrimary,
-            ),
             floatingLabelBehavior: FloatingLabelBehavior.always,
             hintText: hasSelection ? null : placeholder,
             hintStyle: AppTypography.medium14(color: Colors.grey[600]),

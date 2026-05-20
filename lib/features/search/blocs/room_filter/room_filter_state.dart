@@ -3,6 +3,8 @@ import 'package:equatable/equatable.dart';
 import '../../../home/data/models/property_model.dart';
 import '../../../home/data/models/room_filter_draft.dart';
 
+enum FilterApplyTarget { list, map }
+
 enum FilterSheetType { none, ward, propertyType }
 
 final class FilterSheetOption extends Equatable {
@@ -22,6 +24,7 @@ final class RoomFilterState extends Equatable {
     this.isWatchingFilterResults = false,
     this.applyError,
     this.applyResults,
+    this.applyTarget,
     this.activeSheetType = FilterSheetType.none,
     this.sheetTitle = '',
     this.sheetSearchHint = '',
@@ -43,6 +46,9 @@ final class RoomFilterState extends Equatable {
   /// Sau khi apply thành công UI đọc và điều hướng, rồi gọi [clearApplyOutcome].
   final List<PropertyModel>? applyResults;
 
+  /// Đích hiển thị kết quả lần apply gần nhất (list hoặc map).
+  final FilterApplyTarget? applyTarget;
+
   final FilterSheetType activeSheetType;
   final String sheetTitle;
   final String sheetSearchHint;
@@ -61,8 +67,10 @@ final class RoomFilterState extends Equatable {
     bool? isWatchingFilterResults,
     String? applyError,
     List<PropertyModel>? applyResults,
+    FilterApplyTarget? applyTarget,
     bool clearApplyError = false,
     bool clearApplyResults = false,
+    bool clearApplyTarget = false,
     FilterSheetType? activeSheetType,
     String? sheetTitle,
     String? sheetSearchHint,
@@ -81,6 +89,7 @@ final class RoomFilterState extends Equatable {
       applyResults: clearApplyResults
           ? null
           : (applyResults ?? this.applyResults),
+      applyTarget: clearApplyTarget ? null : (applyTarget ?? this.applyTarget),
       activeSheetType: clearSheetDraft
           ? FilterSheetType.none
           : (activeSheetType ?? this.activeSheetType),
@@ -108,6 +117,7 @@ final class RoomFilterState extends Equatable {
     isWatchingFilterResults,
     applyError,
     applyResults,
+    applyTarget,
     activeSheetType,
     sheetTitle,
     sheetSearchHint,

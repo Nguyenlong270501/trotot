@@ -21,6 +21,8 @@ class InfoRow extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4.h),
       child: RichText(
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
         text: TextSpan(
           style: AppTypography.medium12(
             color: AppColors.textSecondary,

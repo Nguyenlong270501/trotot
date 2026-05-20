@@ -27,7 +27,7 @@ class PriceBracketFilter extends StatelessWidget {
         mainAxisSpacing: 10.h,
         childAspectRatio: 2.6,
       ),
-      itemCount: PropertyConstants.priceFilterLabels.length,
+      itemCount: PropertyConstants.priceBrackets.length,
       itemBuilder: (context, index) {
         final isSelected = selectedIndexes.contains(index);
 
@@ -47,7 +47,7 @@ class PriceBracketFilter extends StatelessWidget {
               ),
             ),
             child: Text(
-              PropertyConstants.priceFilterLabels[index],
+              PropertyConstants.priceBrackets[index].label,
               style: isSelected
                   ? AppTypography.bold12(color: AppColors.primary)
                   : AppTypography.medium12(color: Colors.black87),

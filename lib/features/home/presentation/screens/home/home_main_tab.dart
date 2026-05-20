@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../../core/constants/app_sizes.dart';
 import '../../../../../core/constants/property_constants.dart';
 import '../../../../../core/route/app_routes.dart';
@@ -12,7 +13,7 @@ import '../../../blocs/home_suggested_rooms/home_suggested_rooms_state.dart';
 import '../../../../search/blocs/room_filter/room_filter_cubit.dart';
 import '../../../data/models/property_model.dart';
 import 'widgets/app_bar.dart';
-import 'widgets/category_item.dart';
+import 'widgets/home_category_bar.dart';
 import 'widgets/search_bar.dart';
 import '../../widgets/property_card.dart';
 
@@ -37,40 +38,45 @@ class HomeMainTab extends StatelessWidget {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(10.h, 10.h, 10.h, 0),
-          child: Column(
-            children: [
-              BlocSelector<
-                HomeSuggestedRoomsCubit,
-                HomeSuggestedRoomsState,
-                String
-              >(
-                selector: (state) => state.selectedCity,
-                builder: (context, selectedCity) {
-                  return SearchBarCard(
-                    onTap: () {
-                      context.read<RoomFilterCubit>().setCity(
-                        selectedCity,
-                        resetWard: true,
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(10.w, 10.h, 10.w, 0),
+            sliver: SliverToBoxAdapter(
+              child:
+                  BlocSelector<
+                    HomeSuggestedRoomsCubit,
+                    HomeSuggestedRoomsState,
+                    String
+                  >(
+                    selector: (state) => state.selectedCity,
+                    builder: (context, selectedCity) {
+                      return SearchBarCard(
+                        onTap: () {
+                          context.read<RoomFilterCubit>().setCity(
+                            selectedCity,
+                            resetWard: true,
+                          );
+                          context.push(RouteNames.searchPage);
+                        },
+                        locationName: selectedCity,
+                        cityOptions: PropertyConstants.cities,
+                        onMapTap: () {
+                          context.push(RouteNames.mapSearchPage);
+                        },
+                        onCitySelected: (city) => context
+                            .read<HomeSuggestedRoomsCubit>()
+                            .changeCity(city),
                       );
-                      context.push(RouteNames.searchPage);
                     },
-                    locationName: selectedCity,
-                    cityOptions: PropertyConstants.cities,
-                    onMapTap: () {
-                      context.push(RouteNames.mapSearchPage);
-                    },
-                    onCitySelected: (city) => context
-                        .read<HomeSuggestedRoomsCubit>()
-                        .changeCity(city),
-                  );
-                },
-              ),
-              AppSizes.gapH12,
-              Container(
-                padding: EdgeInsets.fromLTRB(10.h, 10.h, 10.h, 10.h),
+                  ),
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(10.w, 12.h, 10.w, 14.h),
+            sliver: SliverToBoxAdapter(
+              child: Container(
+                padding: EdgeInsets.fromLTRB(10.w, 10.h, 10.w, 10.h),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceCard.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(28),
@@ -78,153 +84,114 @@ class HomeMainTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppSizes.gapH8,
-                    const _CategoryLabel(),
-                    AppSizes.gapH16,
-                    const _SuggestionSection(),
+                    AppSizes.gapH4,
+                    const HomeCategoryBar(),
+                    const _CategoryRefreshIndicator(),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          const _SuggestionFeedSliver(),
+          SliverPadding(padding: EdgeInsets.only(bottom: 16.h)),
+        ],
       ),
     );
   }
 }
 
-class _CategoryLabel extends StatelessWidget {
-  const _CategoryLabel();
-
-  static final _categories = [
-    (
-      icon: Icons.cottage_outlined,
-      label: 'PHÒNG TRỌ',
-      propertyType: PropertyConstants.propertyTypes[0],
-    ),
-    (
-      icon: Icons.apartment_rounded,
-      label: 'CHUNG CƯ',
-      propertyType: PropertyConstants.propertyTypes[1],
-    ),
-    (
-      icon: Icons.home_work_outlined,
-      label: 'NGUYÊN CĂN',
-      propertyType: PropertyConstants.propertyTypes[4],
-    ),
-    (
-      icon: Icons.bed_outlined,
-      label: 'Ở GHÉP',
-      propertyType: PropertyConstants.propertyTypes[3],
-    ),
-    (
-      icon: Icons.house_outlined,
-      label: 'STUDIO',
-      propertyType: PropertyConstants.propertyTypes[2],
-    ),
-  ];
+class _CategoryRefreshIndicator extends StatelessWidget {
+  const _CategoryRefreshIndicator();
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<HomeSuggestedRoomsCubit, HomeSuggestedRoomsState>(
-      builder: (context, state) {
-        final selectedCategory = state.selectedCategory;
-        final disabledTypes = state.disabledCategoryTypes;
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = 0; i < _categories.length; i++) ...[
-                if (i > 0) AppSizes.gapW10,
-                CategoryItem(
-                  icon: _categories[i].icon,
-                  label: _categories[i].label,
-                  isActive:
-                      selectedCategory ==
-                      PropertyConstants.normalizePropertyType(
-                        _categories[i].propertyType,
-                      ),
-                  isDisabled: disabledTypes.contains(
-                    PropertyConstants.normalizePropertyType(
-                      _categories[i].propertyType,
-                    ),
-                  ),
-                  onTap: () => context
-                      .read<HomeSuggestedRoomsCubit>()
-                      .selectCategory(_categories[i].propertyType),
-                ),
-              ],
-            ],
-          ),
+    return BlocSelector<HomeSuggestedRoomsCubit, HomeSuggestedRoomsState, bool>(
+      selector: (state) =>
+          state is HomeSuggestedRoomsLoaded && state.isRefreshingCategory,
+      builder: (context, isRefreshing) {
+        if (!isRefreshing) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          children: [
+            AppSizes.gapH8,
+            LinearProgressIndicator(minHeight: 2, color: AppColors.accent),
+            AppSizes.gapH8,
+          ],
         );
       },
     );
   }
 }
 
-class _SuggestionSection extends StatelessWidget {
-  const _SuggestionSection();
+class _SuggestionFeedSliver extends StatelessWidget {
+  const _SuggestionFeedSliver();
+
+  static bool _feedBuildWhen(
+    HomeSuggestedRoomsState previous,
+    HomeSuggestedRoomsState current,
+  ) {
+    if (previous.runtimeType != current.runtimeType) {
+      return true;
+    }
+    if (previous is HomeSuggestedRoomsLoaded &&
+        current is HomeSuggestedRoomsLoaded) {
+      return previous.properties != current.properties;
+    }
+    if (previous is HomeSuggestedRoomsFailure &&
+        current is HomeSuggestedRoomsFailure) {
+      return previous.message != current.message;
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Gợi ý cho bạn',
-              style: AppTypography.bold18(color: AppColors.accent),
-            ),
-          ],
-        ),
-        AppSizes.gapH12,
-        BlocBuilder<HomeSuggestedRoomsCubit, HomeSuggestedRoomsState>(
-          builder: (context, state) {
-            switch (state) {
-              case HomeSuggestedRoomsLoaded(
-                :final properties,
-                :final isRefreshingCategory,
-              ):
-                final withRooms = properties
-                    .where((p) => (p.rooms ?? []).isNotEmpty)
-                    .toList();
-                if (withRooms.isEmpty) {
-                  return SizedBox(
+    return BlocBuilder<HomeSuggestedRoomsCubit, HomeSuggestedRoomsState>(
+      buildWhen: _feedBuildWhen,
+      builder: (context, state) {
+        switch (state) {
+          case HomeSuggestedRoomsLoaded(:final properties):
+            final withRooms = properties
+                .where((p) => (p.rooms ?? []).isNotEmpty)
+                .toList();
+            if (withRooms.isEmpty) {
+              return SliverPadding(
+                padding: EdgeInsets.symmetric(horizontal: 10.w),
+                sliver: SliverToBoxAdapter(
+                  child: SizedBox(
                     height: 120.h,
                     child: Center(
-                      child: isRefreshingCategory
-                          ? const CircularProgressIndicator(
-                              color: AppColors.accent,
-                            )
-                          : Text(
-                              'Chưa có phòng trống',
-                              style: AppTypography.medium14(
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                    ),
-                  );
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (isRefreshingCategory) ...[
-                      const LinearProgressIndicator(
-                        minHeight: 2,
-                        color: AppColors.accent,
+                      child: Text(
+                        'Chưa có phòng trống',
+                        style: AppTypography.medium14(
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                      AppSizes.gapH12,
-                    ],
-                    for (var i = 0; i < withRooms.length; i++) ...[
-                      if (i > 0) AppSizes.gapH16,
-                      _PropertyCardFromFirstRoom(property: withRooms[i]),
-                    ],
-                  ],
-                );
-              case HomeSuggestedRoomsFailure(:final message):
-                return SizedBox(
+                    ),
+                  ),
+                ),
+              );
+            }
+            return SliverPadding(
+              padding: EdgeInsets.symmetric(horizontal: 10.w),
+              sliver: SliverList.separated(
+                itemCount: withRooms.length,
+                separatorBuilder: (_, __) => SizedBox(height: 16.h),
+                itemBuilder: (context, index) {
+                  final property = withRooms[index];
+                  return RepaintBoundary(
+                    child: _PropertyCardFromFirstRoom(property: property),
+                  );
+                },
+              ),
+            );
+          case HomeSuggestedRoomsFailure(:final message):
+            return SliverPadding(
+              padding: EdgeInsets.symmetric(horizontal: 10.w),
+              sliver: SliverToBoxAdapter(
+                child: SizedBox(
                   height: 200.h,
                   child: Center(
                     child: Column(
@@ -249,19 +216,24 @@ class _SuggestionSection extends StatelessWidget {
                       ],
                     ),
                   ),
-                );
-              case HomeSuggestedRoomsLoading():
-              case HomeSuggestedRoomsInitial():
-                return SizedBox(
+                ),
+              ),
+            );
+          case HomeSuggestedRoomsLoading():
+          case HomeSuggestedRoomsInitial():
+            return SliverPadding(
+              padding: EdgeInsets.symmetric(horizontal: 10.w),
+              sliver: SliverToBoxAdapter(
+                child: SizedBox(
                   height: 200.h,
                   child: const Center(child: CircularProgressIndicator()),
-                );
-              default:
-                return const SizedBox.shrink();
-            }
-          },
-        ),
-      ],
+                ),
+              ),
+            );
+          default:
+            return const SliverToBoxAdapter(child: SizedBox.shrink());
+        }
+      },
     );
   }
 }

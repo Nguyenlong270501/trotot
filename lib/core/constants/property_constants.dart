@@ -1,4 +1,20 @@
 import '../../features/home/data/models/amenity_option.dart';
+import 'dart:math' as math;
+
+class PriceFilterBracket {
+  const PriceFilterBracket({
+    required this.label,
+    required this.minInclusive,
+    required this.maxInclusive,
+  });
+
+  final String label;
+  final int minInclusive;
+  final int maxInclusive;
+
+  bool containsPrice(int priceVnd) =>
+      priceVnd >= minInclusive && priceVnd <= maxInclusive;
+}
 
 class PropertyConstants {
   static const List<String> propertyTypes = [
@@ -36,50 +52,73 @@ class PropertyConstants {
     return value.trim();
   }
 
-  static const List<String> priceFilterLabels = [
-    '< 2 triệu',
-    '2 - 3 triệu',
-    '3 - 4 triệu',
-    '4 - 5 triệu',
-    '5 - 6 triệu',
-    '6 - 8 triệu',
-    '8 - 10 triệu',
-    '10 - 12 triệu',
-    '> 12 triệu',
+  static const List<PriceFilterBracket> priceBrackets = [
+    PriceFilterBracket(
+      label: '< 2 triệu',
+      minInclusive: 0,
+      maxInclusive: 2000000,
+    ),
+    PriceFilterBracket(
+      label: '2 - 3 triệu',
+      minInclusive: 2000000,
+      maxInclusive: 3000000,
+    ),
+    PriceFilterBracket(
+      label: '3 - 4 triệu',
+      minInclusive: 3000000,
+      maxInclusive: 4000000,
+    ),
+    PriceFilterBracket(
+      label: '4 - 5 triệu',
+      minInclusive: 4000000,
+      maxInclusive: 5000000,
+    ),
+    PriceFilterBracket(
+      label: '5 - 6 triệu',
+      minInclusive: 5000000,
+      maxInclusive: 6000000,
+    ),
+    PriceFilterBracket(
+      label: '6 - 8 triệu',
+      minInclusive: 6000000,
+      maxInclusive: 8000000,
+    ),
+    PriceFilterBracket(
+      label: '8 - 10 triệu',
+      minInclusive: 8000000,
+      maxInclusive: 10000000,
+    ),
+    PriceFilterBracket(
+      label: '10 - 12 triệu',
+      minInclusive: 10000000,
+      maxInclusive: 12000000,
+    ),
+    PriceFilterBracket(
+      label: '> 12 triệu',
+      minInclusive: 12000000,
+      maxInclusive: 2000000000,
+    ),
   ];
 
-  static bool priceMatchesBracket(int priceVnd, int index) {
-    switch (index) {
-      case 0:
-        return priceVnd < 2000000;
-      case 1:
-        return priceVnd >= 2000000 && priceVnd <= 3000000;
-      case 2:
-        return priceVnd >= 3000000 && priceVnd <= 4000000;
-      case 3:
-        return priceVnd >= 4000000 && priceVnd <= 5000000;
-      case 4:
-        return priceVnd >= 5000000 && priceVnd <= 6000000;
-      case 5:
-        return priceVnd >= 6000000 && priceVnd <= 8000000;
-      case 6:
-        return priceVnd >= 8000000 && priceVnd <= 10000000;
-      case 7:
-        return priceVnd >= 10000000 && priceVnd <= 12000000;
-      case 8:
-        return priceVnd >= 12000000;
-      default:
-        return false;
+  static PriceFilterBracket? bracketAt(int index) {
+    if (index < 0 || index >= priceBrackets.length) {
+      return null;
     }
+    return priceBrackets[index];
   }
 
   static bool priceMatchesAnySelectedBrackets(
     int priceVnd,
     Set<int> selectedIndexes,
   ) {
-    if (selectedIndexes.isEmpty) return true;
-    for (final i in selectedIndexes) {
-      if (priceMatchesBracket(priceVnd, i)) return true;
+    if (selectedIndexes.isEmpty) {
+      return true;
+    }
+    for (final index in selectedIndexes) {
+      final bracket = bracketAt(index);
+      if (bracket != null && bracket.containsPrice(priceVnd)) {
+        return true;
+      }
     }
     return false;
   }
@@ -109,51 +148,30 @@ class PropertyConstants {
     if (indexes.isEmpty) {
       return null;
     }
-    var minInclusive = 9223372036854775807;
-    var maxInclusive = 0;
-    for (final i in indexes) {
-      final b = _bracketInclusiveBounds(i);
-      if (b == null) {
+
+    int? minInclusive;
+    int? maxInclusive;
+
+    for (final index in indexes) {
+      final bracket = bracketAt(index);
+      if (bracket == null) {
         continue;
       }
-      if (b.$1 < minInclusive) {
-        minInclusive = b.$1;
-      }
-      if (b.$2 > maxInclusive) {
-        maxInclusive = b.$2;
-      }
+
+      minInclusive = minInclusive == null
+          ? bracket.minInclusive
+          : math.min(minInclusive, bracket.minInclusive);
+
+      maxInclusive = maxInclusive == null
+          ? bracket.maxInclusive
+          : math.max(maxInclusive, bracket.maxInclusive);
     }
-    if (minInclusive > maxInclusive) {
+
+    if (minInclusive == null || maxInclusive == null) {
       return null;
     }
-    return (minInclusive: minInclusive, maxInclusive: maxInclusive);
-  }
 
-  static (int minInclusive, int maxInclusive)? _bracketInclusiveBounds(
-    int index,
-  ) {
-    switch (index) {
-      case 0:
-        return (0, 1999999);
-      case 1:
-        return (2000000, 2999999);
-      case 2:
-        return (3000000, 3999999);
-      case 3:
-        return (4000000, 4999999);
-      case 4:
-        return (5000000, 5999999);
-      case 5:
-        return (6000000, 7999999);
-      case 6:
-        return (8000000, 9999999);
-      case 7:
-        return (10000000, 11999999);
-      case 8:
-        return (12000000, 2000000000);
-      default:
-        return null;
-    }
+    return (minInclusive: minInclusive, maxInclusive: maxInclusive);
   }
 
   static const List<AmenityOption> amenities = [
@@ -177,5 +195,6 @@ class PropertyConstants {
     AmenityOption(emoji: '🧊', label: 'Tủ lạnh'),
     AmenityOption(emoji: '🌅', label: 'Ban công'),
     AmenityOption(emoji: '💼', label: 'Phù hợp kinh doanh'),
+    AmenityOption(emoji: '🧺', label: 'Máy giặt riêng'),
   ];
 }

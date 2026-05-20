@@ -75,13 +75,14 @@ class AuroraBackground extends StatelessWidget {
             ),
           ),
 
-          // Blur to create aurora softness (clipped to screen for perf)
-          ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-              child: const SizedBox.expand(),
+          // Blur is costly on real devices during scroll — skip when [blurSigma] <= 0.
+          if (blurSigma > 0)
+            ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+                child: const SizedBox.expand(),
+              ),
             ),
-          ),
 
           // Subtle vignette for depth (similar to screenshot)
           IgnorePointer(

@@ -24,6 +24,9 @@ class HomeSuggestedRoomsCubit extends Cubit<HomeSuggestedRoomsState> {
   final Set<String> _disabledCategoryTypes = {};
 
   StreamSubscription<List<PropertyModel>>? _propertiesSub;
+  Timer? _feedDebounce;
+
+  static const Duration _feedDebounceDuration = Duration(milliseconds: 350);
 
   Future<void> watch({String? city}) async {
     if (city != null) {
@@ -123,23 +126,16 @@ class HomeSuggestedRoomsCubit extends Cubit<HomeSuggestedRoomsState> {
         if (isClosed) {
           return;
         }
-        emit(
-          HomeSuggestedRoomsLoaded(
-            List<PropertyModel>.from(properties),
-            selectedCategory: _selectedCategory,
-            selectedCity: _selectedCity,
-            disabledCategoryTypes: Set.unmodifiable(_disabledCategoryTypes),
-            isRefreshingCategory: false,
-          ),
+        _scheduleFeedEmit(
+          properties: properties,
+          onComplete: completer,
         );
-        if (completer != null && !completer.isCompleted) {
-          completer.complete();
-        }
       },
       onError: (Object error) {
         if (isClosed) {
           return;
         }
+        _feedDebounce?.cancel();
         emit(
           HomeSuggestedRoomsFailure(
             error.toString(),
@@ -155,8 +151,48 @@ class HomeSuggestedRoomsCubit extends Cubit<HomeSuggestedRoomsState> {
     );
   }
 
+  void _scheduleFeedEmit({
+    required List<PropertyModel> properties,
+    Completer<void>? onComplete,
+  }) {
+    _feedDebounce?.cancel();
+    final emitImmediately =
+        state is HomeSuggestedRoomsLoading || state is HomeSuggestedRoomsInitial;
+
+    if (emitImmediately) {
+      _emitFeed(properties: properties, onComplete: onComplete);
+      return;
+    }
+
+    _feedDebounce = Timer(_feedDebounceDuration, () {
+      if (isClosed) {
+        return;
+      }
+      _emitFeed(properties: properties, onComplete: onComplete);
+    });
+  }
+
+  void _emitFeed({
+    required List<PropertyModel> properties,
+    Completer<void>? onComplete,
+  }) {
+    emit(
+      HomeSuggestedRoomsLoaded(
+        List<PropertyModel>.from(properties),
+        selectedCategory: _selectedCategory,
+        selectedCity: _selectedCity,
+        disabledCategoryTypes: Set.unmodifiable(_disabledCategoryTypes),
+        isRefreshingCategory: false,
+      ),
+    );
+    if (onComplete != null && !onComplete.isCompleted) {
+      onComplete.complete();
+    }
+  }
+
   @override
   Future<void> close() {
+    _feedDebounce?.cancel();
     _propertiesSub?.cancel();
     return super.close();
   }

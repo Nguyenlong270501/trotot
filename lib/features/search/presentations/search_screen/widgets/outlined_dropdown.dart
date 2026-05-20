@@ -29,7 +29,7 @@ class OutlinedDropdown extends StatelessWidget {
 
     return Container(
       margin: EdgeInsets.only(top: 2.h),
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),

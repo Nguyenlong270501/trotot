@@ -15,6 +15,9 @@ class MapSearchState extends Equatable {
     required this.selectedPropertyId,
     required this.selectedProperty,
     required this.isLoadingSelectedProperty,
+    required this.isFilterMode,
+    required this.filteredResultCount,
+    this.filteredResultsSignature,
   });
 
   factory MapSearchState.initial() {
@@ -28,6 +31,9 @@ class MapSearchState extends Equatable {
       selectedPropertyId: null,
       selectedProperty: null,
       isLoadingSelectedProperty: false,
+      isFilterMode: false,
+      filteredResultCount: 0,
+      filteredResultsSignature: null,
     );
   }
 
@@ -40,6 +46,9 @@ class MapSearchState extends Equatable {
   final String? selectedPropertyId;
   final PropertyModel? selectedProperty;
   final bool isLoadingSelectedProperty;
+  final bool isFilterMode;
+  final int filteredResultCount;
+  final String? filteredResultsSignature;
 
   static const Object _unset = Object();
 
@@ -53,6 +62,9 @@ class MapSearchState extends Equatable {
     Object? selectedPropertyId = _unset,
     Object? selectedProperty = _unset,
     bool? isLoadingSelectedProperty,
+    bool? isFilterMode,
+    int? filteredResultCount,
+    Object? filteredResultsSignature = _unset,
   }) {
     return MapSearchState(
       latitude: latitude ?? this.latitude,
@@ -69,6 +81,11 @@ class MapSearchState extends Equatable {
           : selectedProperty as PropertyModel?,
       isLoadingSelectedProperty:
           isLoadingSelectedProperty ?? this.isLoadingSelectedProperty,
+      isFilterMode: isFilterMode ?? this.isFilterMode,
+      filteredResultCount: filteredResultCount ?? this.filteredResultCount,
+      filteredResultsSignature: filteredResultsSignature == _unset
+          ? this.filteredResultsSignature
+          : filteredResultsSignature as String?,
     );
   }
 
@@ -83,5 +100,8 @@ class MapSearchState extends Equatable {
     selectedPropertyId,
     selectedProperty,
     isLoadingSelectedProperty,
+    isFilterMode,
+    filteredResultCount,
+    filteredResultsSignature,
   ];
 }

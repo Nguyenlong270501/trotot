@@ -190,17 +190,26 @@ class RoomFilterCubit extends Cubit<RoomFilterState> {
     emit(RoomFilterState.initial.copyWith(clearSheetDraft: true));
   }
 
-  void clearApplyOutcome() {
-    emit(state.copyWith(clearApplyResults: true, clearApplyError: true));
+  void clearApplyOutcome({bool keepTarget = false}) {
+    emit(
+      state.copyWith(
+        clearApplyResults: true,
+        clearApplyError: true,
+        clearApplyTarget: !keepTarget,
+      ),
+    );
   }
 
-  Future<void> applyFilter() async {
+  Future<void> applyFilter({
+    FilterApplyTarget target = FilterApplyTarget.list,
+  }) async {
     final criteria = state.draft.toCriteria();
     await _cancelFilterWatch();
     emit(
       state.copyWith(
         isApplying: true,
         isWatchingFilterResults: true,
+        applyTarget: target,
         clearApplyError: true,
         clearApplyResults: true,
       ),
@@ -244,6 +253,7 @@ class RoomFilterCubit extends Cubit<RoomFilterState> {
         isWatchingFilterResults: false,
         clearApplyResults: clearResults,
         clearApplyError: true,
+        clearApplyTarget: true,
       ),
     );
   }

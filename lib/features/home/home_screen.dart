@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen>
       child: Scaffold(
         body: Stack(
           children: [
-            const AuroraBackground(darkMode: false),
+            const AuroraBackground(darkMode: false, blurSigma: 0),
             SafeArea(
               child: ValueListenableBuilder<int>(
                 valueListenable: _selectedIndex,

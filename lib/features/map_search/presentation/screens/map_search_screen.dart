@@ -1,16 +1,22 @@
 import 'dart:async';
-import 'dart:math' show Point;
+import 'dart:math' show Point, max, min;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import '../../../../core/route/app_routes.dart';
+import '../../../../core/widgets/app_alerts.dart';
 import '../../../home/data/models/property_model.dart';
+import '../../../search/blocs/room_filter/room_filter_cubit.dart';
+import '../../../search/blocs/room_filter/room_filter_state.dart';
 import '../../data/models/map_property_pin.dart';
 import '../../data/models/map_visible_bounds.dart';
 import '../../map_search_constants.dart';
 import '../blocs/map_search/map_search_cubit.dart';
 import '../blocs/map_search/map_search_state.dart';
+import '../widgets/map_filter_bottom_sheet.dart';
+import '../widgets/map_filter_result_bar.dart';
 import '../widgets/map_loading_overlay.dart';
 import '../widgets/map_location_pin_marker.dart';
 import '../widgets/map_property_marker_registry.dart';
@@ -37,6 +43,8 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   double _latestZoom = _mapZoom;
   Timer? _regionSearchDebounce;
   MapVisibleBounds? _lastSearchBounds;
+  var _fitFilterPinsOnNextSync = false;
+  MapSearchCubit? _mapSearchCubit;
   final MapPropertyMarkerRegistry _propertyMarkerRegistry =
       MapPropertyMarkerRegistry();
 
@@ -44,6 +52,12 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   void initState() {
     super.initState();
     MapLibreMap.useHybridComposition = true;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _mapSearchCubit = context.read<MapSearchCubit>();
   }
 
   @override
@@ -111,7 +125,8 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     if (_suppressRegionSearch ||
         !_styleLoaded ||
         _mapController == null ||
-        !mounted) {
+        !mounted ||
+        context.read<MapSearchCubit>().state.isFilterMode) {
       return;
     }
     _regionSearchDebounce?.cancel();
@@ -129,7 +144,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
       return;
     }
     final cubit = context.read<MapSearchCubit>();
-    if (cubit.state.isResolvingLocation) {
+    if (cubit.state.isResolvingLocation || cubit.state.isFilterMode) {
       return;
     }
     if (_latestZoom < MapSearchConstants.minZoomToSearch) {
@@ -309,92 +324,260 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     context.read<MapSearchCubit>().initialize();
   }
 
+  Future<void> _fitCameraToPins(List<MapPropertyPin> pins) async {
+    final controller = _mapController;
+    if (controller == null || !_styleLoaded || !mounted || pins.isEmpty) {
+      return;
+    }
+
+    _suppressRegionSearch = true;
+    try {
+      var minLat = pins.first.latitude;
+      var maxLat = minLat;
+      var minLng = pins.first.longitude;
+      var maxLng = minLng;
+
+      for (final pin in pins.skip(1)) {
+        minLat = min(minLat, pin.latitude);
+        maxLat = max(maxLat, pin.latitude);
+        minLng = min(minLng, pin.longitude);
+        maxLng = max(maxLng, pin.longitude);
+      }
+
+      final centerLat = (minLat + maxLat) / 2;
+      final centerLng = (minLng + maxLng) / 2;
+      final latSpan = (maxLat - minLat).abs();
+      final lngSpan = (maxLng - minLng).abs();
+      final span = max(latSpan, lngSpan);
+      final zoom = span < 0.01
+          ? 15.0
+          : span < 0.05
+          ? 13.5
+          : span < 0.15
+          ? 12.0
+          : 11.0;
+
+      await controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: LatLng(centerLat, centerLng), zoom: zoom),
+        ),
+        duration: MapSearchConstants.selectionCameraDuration,
+      );
+      final position = await controller.queryCameraPosition();
+      if (position != null) {
+        _latestZoom = position.zoom;
+      }
+    } catch (_) {
+    } finally {
+      _suppressRegionSearch = false;
+    }
+  }
+
+  void _onMapFilterAppliedFromSheet(List<PropertyModel> results) {
+    if (!mounted) {
+      return;
+    }
+
+    final mapCubit = _mapSearchCubit;
+    if (mapCubit == null) {
+      return;
+    }
+
+    mapCubit.applyFilterResults(results);
+    _fitFilterPinsOnNextSync = true;
+
+    if (results.isEmpty) {
+      Alerts.of(context).showError('Không tìm thấy phòng phù hợp với bộ lọc');
+    }
+  }
+
+  void _onMapFilterRealtimeUpdate(List<PropertyModel> results) {
+    if (!mounted) {
+      return;
+    }
+
+    final route = ModalRoute.of(context);
+    if (route == null || !route.isCurrent) {
+      return;
+    }
+
+    final mapCubit = _mapSearchCubit;
+    if (mapCubit == null || !mapCubit.state.isFilterMode) {
+      return;
+    }
+
+    mapCubit.applyFilterResults(results);
+    unawaited(_syncPropertyMarkers(mapCubit.state));
+  }
+
+  void _openMapFilterSheet() {
+    showMapFilterBottomSheet(
+      context,
+      onFilterApplied: _onMapFilterAppliedFromSheet,
+    );
+  }
+
+  Future<void> _clearMapFilter() async {
+    await context.read<RoomFilterCubit>().stopFilterWatch();
+    context.read<MapSearchCubit>().exitFilterMode();
+    final controller = _mapController;
+    if (controller != null && _styleLoaded) {
+      await _propertyMarkerRegistry.clear(controller);
+    }
+    _lastSearchBounds = null;
+    _scheduleRegionSearch(forceBounds: true);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<MapSearchCubit, MapSearchState>(
-          listenWhen: (previous, current) =>
-              previous.isResolvingLocation != current.isResolvingLocation ||
-              previous.latitude != current.latitude ||
-              previous.longitude != current.longitude,
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop || !mounted) {
+          return;
+        }
+        _mapSearchCubit?.exitFilterMode();
+        context.read<RoomFilterCubit>().resetDraftToInitial();
+      },
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<RoomFilterCubit, RoomFilterState>(
+            listenWhen: (previous, current) {
+              if (current.applyTarget != FilterApplyTarget.map ||
+                  !current.isWatchingFilterResults) {
+                return false;
+              }
+              return current.applyResults != null &&
+                  current.applyResults != previous.applyResults &&
+                  !current.isApplying;
+            },
+            listener: (context, state) {
+              final results = state.applyResults;
+              if (results == null) {
+                return;
+              }
+              _onMapFilterRealtimeUpdate(results);
+              context.read<RoomFilterCubit>().clearApplyOutcome(
+                keepTarget: true,
+              );
+            },
+          ),
+          BlocListener<MapSearchCubit, MapSearchState>(
+            listenWhen: (previous, current) =>
+                previous.isResolvingLocation != current.isResolvingLocation ||
+                previous.latitude != current.latitude ||
+                previous.longitude != current.longitude,
 
-          listener: (context, state) {
-            if (!state.isResolvingLocation) {
-              _queueMapState(state);
+            listener: (context, state) {
+              if (!state.isResolvingLocation) {
+                _queueMapState(state);
 
-              _scheduleRegionSearch(forceBounds: true);
-            }
-          },
-        ),
+                _scheduleRegionSearch(forceBounds: true);
+              }
+            },
+          ),
 
-        BlocListener<MapSearchCubit, MapSearchState>(
-          listenWhen: (previous, current) =>
-              previous.properties != current.properties,
+          BlocListener<MapSearchCubit, MapSearchState>(
+            listenWhen: (previous, current) =>
+                previous.properties != current.properties,
 
-          listener: (context, state) {
-            unawaited(_syncPropertyMarkers(state));
-          },
-        ),
+            listener: (context, state) async {
+              await _syncPropertyMarkers(state);
+              if (_fitFilterPinsOnNextSync && state.isFilterMode) {
+                _fitFilterPinsOnNextSync = false;
+                if (state.properties.isNotEmpty) {
+                  await _fitCameraToPins(state.properties);
+                }
+              }
+            },
+          ),
 
-        BlocListener<MapSearchCubit, MapSearchState>(
-          listenWhen: (previous, current) =>
-              previous.selectedPropertyId != current.selectedPropertyId,
+          BlocListener<MapSearchCubit, MapSearchState>(
+            listenWhen: (previous, current) =>
+                previous.selectedPropertyId != current.selectedPropertyId,
 
-          listener: (context, state) {
-            unawaited(_onSelectionChanged(state));
-          },
-        ),
-      ],
+            listener: (context, state) {
+              unawaited(_onSelectionChanged(state));
+            },
+          ),
+        ],
 
-      child: Scaffold(
-        appBar: AppBar(title: const Text('Tìm trên bản đồ')),
-        body: Stack(
-          clipBehavior: Clip.none,
-          fit: StackFit.expand,
-          children: [
-            MapSearchView(
-              initialZoom: _mapZoom,
-              onMapCreated: _onMapCreated,
-              onStyleLoaded: _onStyleLoaded,
-              onCameraMove: _onCameraMove,
-              onCameraIdle: _scheduleRegionSearch,
-              onMapClick: _onMapClick,
-            ),
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Tìm trên bản đồ'),
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.tune_outlined),
+                tooltip: 'Bộ lọc',
+                onPressed: _openMapFilterSheet,
+              ),
+            ],
+          ),
+          body: Stack(
+            clipBehavior: Clip.none,
+            fit: StackFit.expand,
+            children: [
+              MapSearchView(
+                initialZoom: _mapZoom,
+                onMapCreated: _onMapCreated,
+                onStyleLoaded: _onStyleLoaded,
+                onCameraMove: _onCameraMove,
+                onCameraIdle: _scheduleRegionSearch,
+                onMapClick: _onMapClick,
+              ),
 
-            BlocBuilder<MapSearchCubit, MapSearchState>(
-              buildWhen: (previous, current) =>
-                  previous.isResolvingLocation != current.isResolvingLocation ||
-                  previous.isLoadingProperties != current.isLoadingProperties ||
-                  previous.selectedPropertyId != current.selectedPropertyId ||
-                  previous.selectedProperty != current.selectedProperty ||
-                  previous.isLoadingSelectedProperty !=
-                      current.isLoadingSelectedProperty,
-              builder: (context, state) {
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    MapLoadingOverlay(
-                      isResolvingLocation: state.isResolvingLocation,
-                      isLoadingProperties: state.isLoadingProperties,
-                    ),
-                    if (state.selectedPropertyId != null)
-                      Positioned.fill(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.translucent,
-                          onTap: _dismissSelection,
-                        ),
+              BlocBuilder<MapSearchCubit, MapSearchState>(
+                buildWhen: (previous, current) =>
+                    previous.isResolvingLocation !=
+                        current.isResolvingLocation ||
+                    previous.isLoadingProperties !=
+                        current.isLoadingProperties ||
+                    previous.selectedPropertyId != current.selectedPropertyId ||
+                    previous.selectedProperty != current.selectedProperty ||
+                    previous.isLoadingSelectedProperty !=
+                        current.isLoadingSelectedProperty ||
+                    previous.isFilterMode != current.isFilterMode ||
+                    previous.filteredResultCount != current.filteredResultCount,
+                builder: (context, state) {
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      MapLoadingOverlay(
+                        isResolvingLocation: state.isResolvingLocation,
+                        isLoadingProperties: state.isLoadingProperties,
                       ),
-                    MapSelectionCardOverlay(
-                      state: state,
-                      onOpenDetails: _openPropertyDetails,
-                    ),
-                    MapSearchMapControls(onMyLocationTap: _onMyLocationTap),
-                  ],
-                );
-              },
-            ),
-          ],
+                      if (state.selectedPropertyId != null)
+                        Positioned.fill(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onTap: _dismissSelection,
+                          ),
+                        ),
+                      MapSelectionCardOverlay(
+                        state: state,
+                        onOpenDetails: _openPropertyDetails,
+                      ),
+                      if (state.isFilterMode &&
+                          state.selectedPropertyId == null)
+                        Positioned(
+                          left: 16.w,
+                          right: 16.w,
+                          bottom: 24.h,
+                          child: SafeArea(
+                            top: false,
+                            child: MapFilterResultBar(
+                              count: state.filteredResultCount,
+                              onClear: () => unawaited(_clearMapFilter()),
+                            ),
+                          ),
+                        ),
+                      MapSearchMapControls(onMyLocationTap: _onMyLocationTap),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

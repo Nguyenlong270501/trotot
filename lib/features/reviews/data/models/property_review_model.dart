@@ -40,7 +40,6 @@ class PropertyReviewModel {
     );
   }
 
-
   static DateTime _parseDateTime(dynamic value) {
     if (value is Timestamp) {
       return value.toDate();
@@ -48,6 +47,6 @@ class PropertyReviewModel {
     if (value is DateTime) {
       return value;
     }
-    return DateTime.now(); 
+    return DateTime.now();
   }
 }

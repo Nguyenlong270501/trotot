@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../home/data/models/property_model.dart';
+import '../../../data/mappers/map_property_pin_mapper.dart';
 import '../../../data/models/map_visible_bounds.dart';
 import '../../../data/repositories/map_location_repository.dart';
 import '../../../data/repositories/map_property_repository.dart';
@@ -42,7 +44,7 @@ class MapSearchCubit extends Cubit<MapSearchState> {
   }
 
   Future<void> searchInBounds(MapVisibleBounds bounds) async {
-    if (state.isResolvingLocation) {
+    if (state.isResolvingLocation || state.isFilterMode) {
       return;
     }
 
@@ -128,6 +130,49 @@ class MapSearchCubit extends Cubit<MapSearchState> {
     _selectionGeneration++;
     emit(
       state.copyWith(
+        properties: [],
+        isLoadingProperties: false,
+        selectedPropertyId: null,
+        selectedProperty: null,
+        isLoadingSelectedProperty: false,
+      ),
+    );
+  }
+
+  void applyFilterResults(List<PropertyModel> properties) {
+    final signature = MapPropertyPinMapper.resultsSignature(properties);
+    final pinsUnchanged = signature == state.filteredResultsSignature;
+    final pins = pinsUnchanged
+        ? state.properties
+        : MapPropertyPinMapper.fromProperties(properties);
+
+    if (!pinsUnchanged) {
+      _searchGeneration++;
+      _selectionGeneration++;
+    }
+
+    emit(
+      state.copyWith(
+        isFilterMode: true,
+        filteredResultCount: properties.length,
+        filteredResultsSignature: signature,
+        properties: pins,
+        isLoadingProperties: false,
+        selectedPropertyId: null,
+        selectedProperty: null,
+        isLoadingSelectedProperty: false,
+      ),
+    );
+  }
+
+  void exitFilterMode() {
+    _searchGeneration++;
+    _selectionGeneration++;
+    emit(
+      state.copyWith(
+        isFilterMode: false,
+        filteredResultCount: 0,
+        filteredResultsSignature: null,
         properties: [],
         isLoadingProperties: false,
         selectedPropertyId: null,
