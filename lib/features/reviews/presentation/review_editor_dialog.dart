@@ -15,12 +15,14 @@ class ReviewEditorDialog extends StatelessWidget {
     required this.property,
     required this.currentUserId,
     required this.currentUserName,
+    required this.currentUserAvatarUrl,
     this.existingReview,
   });
 
   final PropertyModel property;
   final String currentUserId;
   final String currentUserName;
+  final String? currentUserAvatarUrl;
   final PropertyReviewModel? existingReview;
 
   @override
@@ -98,6 +100,7 @@ class ReviewEditorDialog extends StatelessWidget {
                   propertyId: property.propertyId,
                   userId: currentUserId,
                   userName: currentUserName,
+                  avatarUrl: currentUserAvatarUrl,
                   rating: formState.draftRating,
                   content: formState.draftContent,
                 );

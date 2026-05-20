@@ -39,6 +39,7 @@ class PropertyModel {
   final double ratingAverage;
   final int totalReviews;
   final Map<String, int> ratingDistribution;
+  final int minimumRentalDuration;
 
   // Dữ liệu mở rộng (không lưu trực tiếp vào collection properties)
   final List<RoomModel>? rooms;
@@ -56,6 +57,7 @@ class PropertyModel {
     required this.propertyTypes,
     this.minRoomPrice,
     this.maxRoomPrice,
+    required this.minimumRentalDuration,
     required this.city,
     required this.ward,
     required this.streetAddress,
@@ -99,6 +101,7 @@ class PropertyModel {
     List<String>? propertyTypes,
     int? minRoomPrice,
     int? maxRoomPrice,
+    int? minimumRentalDuration,
     String? city,
     String? ward,
     String? streetAddress,
@@ -130,6 +133,7 @@ class PropertyModel {
       propertyTypes: propertyTypes ?? this.propertyTypes,
       minRoomPrice: minRoomPrice ?? this.minRoomPrice,
       maxRoomPrice: maxRoomPrice ?? this.maxRoomPrice,
+      minimumRentalDuration: minimumRentalDuration ?? this.minimumRentalDuration,
       city: city ?? this.city,
       ward: ward ?? this.ward,
       streetAddress: streetAddress ?? this.streetAddress,
@@ -164,6 +168,7 @@ class PropertyModel {
       'propertyTypes': propertyTypes,
       'minRoomPrice': minRoomPrice,
       'maxRoomPrice': maxRoomPrice,
+      'minimumRentalDuration': minimumRentalDuration,
       'city': city,
       'ward': ward,
       'streetAddress': streetAddress,
@@ -197,6 +202,7 @@ class PropertyModel {
       propertyTypes: _parsePropertyTypes(map),
       minRoomPrice: _parseOptionalInt(map['minRoomPrice']),
       maxRoomPrice: _parseOptionalInt(map['maxRoomPrice']),
+      minimumRentalDuration: map['minimumRentalDuration'] ?? 0,
       city: map['city'] ?? '',
       ward: map['ward'] ?? '',
       streetAddress: map['streetAddress'] ?? '',

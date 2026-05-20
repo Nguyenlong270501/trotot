@@ -20,11 +20,11 @@ class MapSearchCubit extends Cubit<MapSearchState> {
   int _selectionGeneration = 0;
 
   Future<void> initialize() async {
+    emit(state.copyWith(isResolvingLocation: true));
+
     try {
       final result = await _locationRepository.resolveMapCenter();
-      if (isClosed) {
-        return;
-      }
+      if (isClosed) return;
 
       emit(
         state.copyWith(
@@ -35,9 +35,8 @@ class MapSearchCubit extends Cubit<MapSearchState> {
         ),
       );
     } catch (_) {
-      if (isClosed) {
-        return;
-      }
+      if (isClosed) return;
+
       emit(state.copyWith(isResolvingLocation: false));
     }
   }
@@ -56,12 +55,7 @@ class MapSearchCubit extends Cubit<MapSearchState> {
         return;
       }
 
-      emit(
-        state.copyWith(
-          properties: pins,
-          isLoadingProperties: false,
-        ),
-      );
+      emit(state.copyWith(properties: pins, isLoadingProperties: false));
     } catch (_) {
       if (isClosed || generation != _searchGeneration) {
         return;

@@ -14,6 +14,7 @@ import '../blocs/map_search/map_search_state.dart';
 import '../widgets/map_loading_overlay.dart';
 import '../widgets/map_location_pin_marker.dart';
 import '../widgets/map_property_marker_registry.dart';
+import '../widgets/map_search_map_controls.dart';
 import '../widgets/map_search_view.dart';
 import '../widgets/map_selection_card_overlay.dart';
 
@@ -30,8 +31,9 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   var _styleLoaded = false;
   MapSearchState? _pendingMapState;
   Symbol? _locationSymbol;
-  var _consumeNextMapClick = false;
+  DateTime? _lastSymbolTapAt;
   var _suppressRegionSearch = false;
+  var _centeringSelection = false;
   double _latestZoom = _mapZoom;
   Timer? _regionSearchDebounce;
   MapVisibleBounds? _lastSearchBounds;
@@ -65,16 +67,32 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     if (propertyId == null || !mounted) {
       return;
     }
-    _consumeNextMapClick = true;
+    _lastSymbolTapAt = DateTime.now();
     context.read<MapSearchCubit>().selectProperty(propertyId);
   }
 
-  void _onMapClick(Point<double> point, LatLng latLng) {
-    if (_consumeNextMapClick) {
-      _consumeNextMapClick = false;
+  bool _isWithinSymbolTapGracePeriod() {
+    final tappedAt = _lastSymbolTapAt;
+    if (tappedAt == null) {
+      return false;
+    }
+    return DateTime.now().difference(tappedAt) <
+        const Duration(milliseconds: 280);
+  }
+
+  void _dismissSelection() {
+    final cubit = context.read<MapSearchCubit>();
+    if (cubit.state.selectedPropertyId == null) {
       return;
     }
-    context.read<MapSearchCubit>().clearSelection();
+    cubit.clearSelection();
+  }
+
+  void _onMapClick(Point<double> point, LatLng latLng) {
+    if (_isWithinSymbolTapGracePeriod()) {
+      return;
+    }
+    _dismissSelection();
   }
 
   void _onStyleLoaded() {
@@ -84,7 +102,9 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   }
 
   void _onCameraMove(CameraPosition position) {
-    _latestZoom = position.zoom;
+    if (!_centeringSelection) {
+      _latestZoom = position.zoom;
+    }
   }
 
   void _scheduleRegionSearch({bool forceBounds = false}) {
@@ -179,20 +199,21 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     if (controller == null || !_styleLoaded || !mounted) {
       return;
     }
+    _centeringSelection = true;
     _suppressRegionSearch = true;
 
     try {
       await controller.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(pin.latitude, pin.longitude),
-            zoom: _latestZoom,
-          ),
-        ),
+        CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
         duration: MapSearchConstants.selectionCameraDuration,
       );
+      final position = await controller.queryCameraPosition();
+      if (position != null) {
+        _latestZoom = position.zoom;
+      }
     } catch (_) {
     } finally {
+      _centeringSelection = false;
       _suppressRegionSearch = false;
     }
   }
@@ -284,6 +305,10 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     );
   }
 
+  void _onMyLocationTap() {
+    context.read<MapSearchCubit>().initialize();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
@@ -347,15 +372,24 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
                       current.isLoadingSelectedProperty,
               builder: (context, state) {
                 return Stack(
+                  fit: StackFit.expand,
                   children: [
                     MapLoadingOverlay(
                       isResolvingLocation: state.isResolvingLocation,
                       isLoadingProperties: state.isLoadingProperties,
                     ),
+                    if (state.selectedPropertyId != null)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: _dismissSelection,
+                        ),
+                      ),
                     MapSelectionCardOverlay(
                       state: state,
                       onOpenDetails: _openPropertyDetails,
                     ),
+                    MapSearchMapControls(onMyLocationTap: _onMyLocationTap),
                   ],
                 );
               },

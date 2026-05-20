@@ -17,8 +17,8 @@ class MapLoadingOverlay extends StatelessWidget {
     final label = isResolvingLocation
         ? 'Đang lấy vị trí...'
         : isLoadingProperties
-            ? 'Đang tải phòng...'
-            : null;
+        ? 'Đang tải phòng...'
+        : null;
 
     if (label == null) return const SizedBox.shrink();
 
@@ -26,9 +26,7 @@ class MapLoadingOverlay extends StatelessWidget {
       top: 12.h,
       left: 0,
       right: 0,
-      child: Center(
-        child: LoadingStatusChip(label: label),
-      ),
+      child: Center(child: LoadingStatusChip(label: label)),
     );
   }
 }

@@ -10,6 +10,7 @@ class PropertyReviewModel {
     required this.content,
     required this.createdAt,
     required this.updatedAt,
+    this.avatarUrl,
   });
 
   final String reviewId;
@@ -20,40 +21,7 @@ class PropertyReviewModel {
   final String content;
   final DateTime createdAt;
   final DateTime updatedAt;
-
-  PropertyReviewModel copyWith({
-    String? reviewId,
-    String? propertyId,
-    String? userId,
-    String? userName,
-    int? rating,
-    String? content,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    return PropertyReviewModel(
-      reviewId: reviewId ?? this.reviewId,
-      propertyId: propertyId ?? this.propertyId,
-      userId: userId ?? this.userId,
-      userName: userName ?? this.userName,
-      rating: rating ?? this.rating,
-      content: content ?? this.content,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'propertyId': propertyId,
-      'userId': userId,
-      'userName': userName,
-      'rating': rating,
-      'content': content,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
-    };
-  }
+  final String? avatarUrl;
 
   factory PropertyReviewModel.fromMap(
     Map<String, dynamic> map, {
@@ -68,8 +36,10 @@ class PropertyReviewModel {
       content: (map['content'] ?? '').toString(),
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTime(map['updatedAt']),
+      avatarUrl: map['avatarUrl']?.toString(),
     );
   }
+
 
   static DateTime _parseDateTime(dynamic value) {
     if (value is Timestamp) {
@@ -78,6 +48,6 @@ class PropertyReviewModel {
     if (value is DateTime) {
       return value;
     }
-    return DateTime.now();
+    return DateTime.now(); 
   }
 }

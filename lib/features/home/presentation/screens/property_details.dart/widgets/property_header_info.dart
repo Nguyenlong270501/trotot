@@ -38,6 +38,8 @@ class PropertyHeaderInfo extends StatelessWidget {
         AppSizes.gapH1,
         _buildPriceInfo(),
         AppSizes.gapH1,
+        _buildMinimumRentalDuration(),
+        AppSizes.gapH6,
         _buildRatingRow(),
         AppSizes.gapH8,
         if (property.imageUrls != null && property.imageUrls!.isNotEmpty)
@@ -99,6 +101,18 @@ class PropertyHeaderInfo extends StatelessWidget {
   Widget _buildPriceInfo() {
     final (priceTitle, priceLabel) = PropertyHelper.priceRangeLabel(rooms);
     return InfoRow(label: priceTitle, value: priceLabel, highlight: true);
+  }
+
+  Widget _buildMinimumRentalDuration() {
+    return property.minimumRentalDuration == 0
+        ? Text(
+            'Không yêu cần thời gian thuê tối thiểu',
+            style: AppTypography.medium14(color: AppColors.textPrimary),
+          )
+        : InfoRow(
+            label: 'Thời gian thuê tối thiểu',
+            value: '${property.minimumRentalDuration} tháng',
+          );
   }
 
   Widget _buildRatingRow() {

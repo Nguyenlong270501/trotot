@@ -19,8 +19,8 @@ import '../../../blocs/property_details_live/property_details_live_cubit.dart';
 import '../../../blocs/property_details_live/property_details_live_state.dart';
 import '../../../data/models/property_model.dart';
 import '../../../data/models/room_model.dart';
-import '../../widgets/room_mini_card.dart';
 import 'widgets/landlord_info_card.dart';
+import 'widgets/property_available_rooms_section.dart';
 import 'widgets/property_amenities_rules.dart';
 import 'widgets/property_bottom_action_bar.dart';
 import 'widgets/property_description_section.dart';
@@ -326,28 +326,12 @@ class _PropertyDetailsHeaderBody extends StatelessWidget {
             ),
             AppSizes.gapH16,
             if (liveRooms.isNotEmpty) ...[
-              SectionCard(
-                emoji: '🚪',
-                title:
-                    'Danh sách phòng trống (${liveRooms.length} phòng)',
-                child: Column(
-                  children: [
-                    for (var i = 0; i < liveRooms.length; i++) ...[
-                      if (i > 0) SizedBox(height: 10.h),
-                      RoomMiniCard(
-                        name: liveRooms[i].roomName,
-                        priceLabel:
-                            '${PropertyHelper.formatPrice(liveRooms[i].price)} đ/tháng',
-                        onTap: () {
-                          context
-                              .read<PropertyDetailsLiveCubit>()
-                              .selectRoom(liveRooms[i]);
-                          showRoomPreviewSheet(context, liveRooms[i]);
-                        },
-                      ),
-                    ],
-                  ],
-                ),
+              PropertyAvailableRoomsSection(
+                rooms: liveRooms,
+                onRoomTap: (room) {
+                  context.read<PropertyDetailsLiveCubit>().selectRoom(room);
+                  showRoomPreviewSheet(context, room);
+                },
               ),
               AppSizes.gapH16,
             ],
@@ -520,6 +504,7 @@ class _ReviewsSlot extends StatelessWidget {
               property: liveState.property,
               currentUserId: user.userId,
               currentUserName: user.userName,
+              currentUserAvatarUrl: user.avatarUrl,
               reviews: liveState.reviews,
               currentUserReview: liveState.currentUserReview,
             );

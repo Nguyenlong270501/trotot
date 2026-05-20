@@ -52,6 +52,7 @@ class ReviewFormCubit extends Cubit<ReviewFormState> {
     required String propertyId,
     required String userId,
     required String userName,
+    required String? avatarUrl,
     required int rating,
     required String content,
   }) async {
@@ -61,6 +62,7 @@ class ReviewFormCubit extends Cubit<ReviewFormState> {
         propertyId: propertyId,
         userId: userId,
         userName: userName,
+        avatarUrl: avatarUrl,
         rating: rating,
         content: content,
       );

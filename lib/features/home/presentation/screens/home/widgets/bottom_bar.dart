@@ -101,7 +101,7 @@ class _BottomItemContent extends StatelessWidget {
       margin: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: isActive ? AppColors.accentLight : Colors.transparent,
+        color: isActive ? AppColors.accentLight : null,
         borderRadius: BorderRadius.circular(24.r),
       ),
       child: Row(

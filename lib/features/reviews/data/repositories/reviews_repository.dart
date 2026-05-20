@@ -15,6 +15,7 @@ abstract class ReviewsRepository {
     required String propertyId,
     required String userId,
     required String userName,
+    required String? avatarUrl,
     required int rating,
     required String content,
   });

@@ -55,15 +55,20 @@ class FirebaseReviewsRemoteDataSource implements ReviewsRemoteDataSource {
     required String propertyId,
     required String userId,
     required String userName,
+    required String? avatarUrl,
     required int rating,
     required String content,
   }) async {
     final reviewRef = _reviewsRef(propertyId).doc(userId);
     final current = await reviewRef.get();
+    final normalizedAvatarUrl = avatarUrl?.trim() ?? '';
     await reviewRef.set({
       'propertyId': propertyId.trim(),
       'userId': userId.trim(),
       'userName': userName.trim(),
+      'avatarUrl': normalizedAvatarUrl.isNotEmpty
+          ? normalizedAvatarUrl
+          : FieldValue.delete(),
       'rating': rating,
       'content': content.trim(),
       'createdAt': current.data()?['createdAt'] ?? FieldValue.serverTimestamp(),

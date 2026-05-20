@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -21,6 +22,7 @@ class PropertyReviewsSection extends StatelessWidget {
     required this.property,
     required this.currentUserId,
     required this.currentUserName,
+    required this.currentUserAvatarUrl,
     required this.reviews,
     required this.currentUserReview,
   });
@@ -28,12 +30,12 @@ class PropertyReviewsSection extends StatelessWidget {
   final PropertyModel property;
   final String currentUserId;
   final String currentUserName;
+  final String? currentUserAvatarUrl;
   final List<PropertyReviewModel> reviews;
   final PropertyReviewModel? currentUserReview;
 
   bool get _isPropertyOwner =>
-      currentUserId.isNotEmpty &&
-      currentUserId == property.landlordId.trim();
+      currentUserId.isNotEmpty && currentUserId == property.landlordId.trim();
 
   bool get _canWriteOrEditReview =>
       currentUserId.isNotEmpty && !_isPropertyOwner;
@@ -49,6 +51,7 @@ class PropertyReviewsSection extends StatelessWidget {
           property: property,
           currentUserId: currentUserId,
           currentUserName: currentUserName,
+          currentUserAvatarUrl: currentUserAvatarUrl,
           existingReview: currentUserReview,
         ),
       ),
@@ -76,9 +79,7 @@ class PropertyReviewsSection extends StatelessWidget {
             context.read<ReviewFormCubit>().clearFeedback();
           }
         },
-        child: Builder(
-          builder: (innerContext) => _buildContent(innerContext),
-        ),
+        child: Builder(builder: (innerContext) => _buildContent(innerContext)),
       ),
     );
   }
@@ -86,7 +87,8 @@ class PropertyReviewsSection extends StatelessWidget {
   Widget _buildContent(BuildContext context) {
     final total = reviews.isNotEmpty ? reviews.length : property.totalReviews;
     final average = reviews.isNotEmpty
-        ? reviews.fold<int>(0, (sum, item) => sum + item.rating) / reviews.length
+        ? reviews.fold<int>(0, (sum, item) => sum + item.rating) /
+              reviews.length
         : property.ratingAverage;
     final distribution = reviews.isNotEmpty
         ? _distributionFromReviews(reviews)
@@ -96,11 +98,7 @@ class PropertyReviewsSection extends StatelessWidget {
       title: 'Đánh giá ($total)',
       trailing: Row(
         children: [
-          Icon(
-            Icons.star_rounded,
-            color: AppColors.starColor,
-            size: 20.sp,
-          ),
+          Icon(Icons.star_rounded, color: AppColors.starColor, size: 20.sp),
           AppSizes.gapW4,
           Text(
             average.toStringAsFixed(1),
@@ -123,9 +121,7 @@ class PropertyReviewsSection extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: 8.h),
               child: Text(
                 'Chưa có đánh giá nào.',
-                style: AppTypography.medium14(
-                  color: AppColors.textMuted,
-                ),
+                style: AppTypography.medium14(color: AppColors.textMuted),
               ),
             )
           else
@@ -220,13 +216,7 @@ class PropertyReviewsSection extends StatelessWidget {
   Widget _buildReviewItem(BuildContext context, PropertyReviewModel review) {
     final isOwnReview =
         _canWriteOrEditReview && review.userId.trim() == currentUserId.trim();
-    final initials = review.userName
-        .split(' ')
-        .map((e) => e.isNotEmpty ? e[0] : '')
-        .take(2)
-        .join('')
-        .toUpperCase();
-
+    final avatarUrl = review.avatarUrl?.trim() ?? '';
     return Padding(
       padding: EdgeInsets.only(bottom: 16.h),
       child: Column(
@@ -234,14 +224,28 @@ class PropertyReviewsSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 18.r,
-                backgroundColor: AppColors.infoLight,
-                child: Text(
-                  initials,
-                  style: AppTypography.bold12(color: AppColors.infoDark),
-                ),
-              ),
+              avatarUrl.isNotEmpty
+                  ? CircleAvatar(
+                      radius: 18.r,
+                      backgroundColor: const Color.fromARGB(255, 17, 18, 19),
+                      child: ClipOval(
+                        child: CachedNetworkImage(
+                          imageUrl: avatarUrl,
+                          width: 36.r,
+                          height: 36.r,
+                          fit: BoxFit.cover,
+                          errorWidget: (context, url, error) =>
+                              Image.asset('assets/images/profile.png'),
+                        ),
+                      ),
+                    )
+                  : CircleAvatar(
+                      radius: 18.r,
+                      backgroundColor: AppColors.infoLight,
+                      child: ClipOval(
+                        child: Image.asset('assets/images/profile.png'),
+                      ),
+                    ),
               AppSizes.gapW10,
               Expanded(
                 child: Column(

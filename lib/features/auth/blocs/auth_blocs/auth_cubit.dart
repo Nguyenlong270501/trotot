@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/constants/app_enums.dart';
 import '../../../../core/services/fcm_service.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/models/user.dart';
@@ -15,6 +16,10 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
   StreamSubscription<UserModel?>? _userSubscription;
 
   Future<void> _onAuthSuccess(UserModel user) async {
+    if (!await _ensureAccountActive(user)) {
+      return;
+    }
+
     emit(AuthenticationSuccessState(user));
     _listenToUser(user.userId);
 
@@ -24,12 +29,51 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
     try {
       await FCMService().requestNotificationPermission(uid: userId);
     } catch (e, st) {
-      log(
-        'FCM permission/sync failed after auth success',
-        error: e,
-        stackTrace: st,
-      );
+      log('Yêu cầu quyền thông báo thất bại: $e', error: e, stackTrace: st);
     }
+  }
+
+  Future<bool> _ensureAccountActive(UserModel user) async {
+    if (user.status == UserStatus.active) {
+      return true;
+    }
+
+    await _rejectInactiveAccount(user);
+    return false;
+  }
+
+  Future<void> _rejectInactiveAccount(UserModel user) async {
+    await _userSubscription?.cancel();
+    _userSubscription = null;
+
+    final userId = user.userId.trim();
+    if (userId.isNotEmpty) {
+      try {
+        await FCMService().clearUserFcmTokensOnFirestore(userId);
+      } catch (e) {
+        log(
+          'Xóa token FCM trên Firestore thất bại cho tài khoản không hoạt động: $e',
+        );
+      }
+    }
+
+    try {
+      await _authRepository.signOut();
+    } catch (e) {
+      log('Đăng xuất từ Firebase thất bại cho tài khoản không hoạt động: $e');
+    }
+
+    try {
+      await FCMService().deleteLocalMessagingToken();
+    } catch (e) {
+      log('Xóa token thông báo cục bộ thất bại: $e');
+    }
+
+    emit(
+      AuthenticationErrorState(
+        'Tài khoản của bạn đã bị khóa, vui lòng liên hệ quản trị viên để được hỗ trợ.',
+      ),
+    );
   }
 
   void _listenToUser(String userId) {
@@ -37,8 +81,11 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
     _userSubscription = _authRepository
         .watchCurrentUserData(userId)
         .listen(
-          (user) {
+          (user) async {
             if (user != null) {
+              if (!await _ensureAccountActive(user)) {
+                return;
+              }
               emit(AuthenticationSuccessState(user));
             } else {
               emit(UnAuthenticationState());
@@ -151,7 +198,6 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
   }
 
   Future<void> signout() async {
-    // Lấy userId TRƯỚC khi đổi state, tránh mất reference
     final currentUser = state is AuthenticationSuccessState
         ? (state as AuthenticationSuccessState).user
         : null;
@@ -160,23 +206,20 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
     try {
       emit(AuthenticationLoadingState());
 
-      // 1. Clear token trên Firestore trước (best-effort, không block logout)
       if (userId != null && userId.isNotEmpty) {
         try {
           await FCMService().clearUserFcmTokensOnFirestore(userId);
         } catch (e) {
-          log('⚠️ clearUserFcmTokensOnFirestore failed, continuing logout: $e');
+          log('⚠️ Xóa token FCM trên Firestore thất bại: $e');
         }
       }
 
-      // 2. Logout Firebase Auth
       await _authRepository.signOut();
 
-      // 3. Xóa local token sau logout (best-effort)
       try {
         await FCMService().deleteLocalMessagingToken();
       } catch (e) {
-        log('⚠️ deleteLocalMessagingToken failed, ignored: $e');
+        log('⚠️ Xóa token thông báo cục bộ thất bại: $e');
       }
 
       await _userSubscription?.cancel();
@@ -193,6 +236,9 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
       final updatedUser = await _authRepository.getCurrentUser();
 
       if (updatedUser != null) {
+        if (!await _ensureAccountActive(updatedUser)) {
+          return;
+        }
         emit(AuthenticationSuccessState(updatedUser));
         if (_userSubscription == null) {
           _listenToUser(updatedUser.userId);
