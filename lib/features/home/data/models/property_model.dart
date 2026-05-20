@@ -21,6 +21,8 @@ class PropertyModel {
   final String ward;
   final String streetAddress;
   final GeoPoint? location;
+  final double? latitude;
+  final double? longitude;
 
   // Chi phí & Tiện ích
   final int electricityPrice;
@@ -62,6 +64,8 @@ class PropertyModel {
     required this.ward,
     required this.streetAddress,
     this.location,
+    this.latitude,
+    this.longitude,
     required this.electricityPrice,
     required this.waterPrice,
     this.wifiPrice,
@@ -106,6 +110,8 @@ class PropertyModel {
     String? ward,
     String? streetAddress,
     GeoPoint? location,
+    double? latitude,
+    double? longitude,
     int? electricityPrice,
     int? waterPrice,
     int? wifiPrice,
@@ -138,6 +144,8 @@ class PropertyModel {
       ward: ward ?? this.ward,
       streetAddress: streetAddress ?? this.streetAddress,
       location: location ?? this.location,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       electricityPrice: electricityPrice ?? this.electricityPrice,
       waterPrice: waterPrice ?? this.waterPrice,
       wifiPrice: wifiPrice ?? this.wifiPrice,
@@ -173,6 +181,8 @@ class PropertyModel {
       'ward': ward,
       'streetAddress': streetAddress,
       'location': location,
+      'latitude': latitude,
+      'longitude': longitude,
       'electricityPrice': electricityPrice,
       'waterPrice': waterPrice,
       'wifiPrice': wifiPrice,
@@ -207,6 +217,8 @@ class PropertyModel {
       ward: map['ward'] ?? '',
       streetAddress: map['streetAddress'] ?? '',
       location: _parseGeoPoint(map['location']),
+      latitude: _parseOptionalDouble(map['latitude']),
+      longitude: _parseOptionalDouble(map['longitude']),
       electricityPrice: (map['electricityPrice'] ?? 0).toInt(),
       waterPrice: (map['waterPrice'] ?? 0).toInt(),
       wifiPrice: map['wifiPrice']?.toInt(),
@@ -253,6 +265,13 @@ class PropertyModel {
     }
     if (value is num) {
       return value.toInt();
+    }
+    return null;
+  }
+
+  static double? _parseOptionalDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
     }
     return null;
   }

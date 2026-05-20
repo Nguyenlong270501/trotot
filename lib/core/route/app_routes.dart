@@ -15,10 +15,13 @@ import '../../features/home/data/models/property_model.dart';
 import '../../features/home/data/models/room_model.dart';
 import '../../features/favorites/data/repositories/favorite_repository.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
+import '../../features/map_search/data/datasources/goong_place_remote_data_source.dart';
 import '../../features/map_search/data/datasources/map_location_remote_data_source.dart';
 import '../../features/map_search/data/datasources/map_property_remote_data_source.dart';
 import '../../features/map_search/data/repositories/map_location_repository.dart';
+import '../../features/map_search/data/repositories/map_place_search_repository.dart';
 import '../../features/map_search/data/repositories/map_property_repository.dart';
+import '../../features/map_search/presentation/blocs/map_place_search/map_place_search_cubit.dart';
 import '../../features/map_search/presentation/blocs/map_search/map_search_cubit.dart';
 import '../../features/map_search/presentation/screens/map_search_screen.dart';
 import '../../features/profile/presentation/screens/security_password/security_password_screen.dart';
@@ -220,15 +223,26 @@ class AppRoutes {
       GoRoute(
         path: RouteNames.mapSearchPage,
         name: RouteNames.mapSearchPage,
-        builder: (context, state) => BlocProvider<MapSearchCubit>(
-          create: (context) => MapSearchCubit(
-            locationRepository: MapLocationRepository(
-              remote: const GeolocatorMapLocationRemoteDataSource(),
+        builder: (context, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider<MapSearchCubit>(
+              create: (context) => MapSearchCubit(
+                locationRepository: MapLocationRepository(
+                  remote: const GeolocatorMapLocationRemoteDataSource(),
+                ),
+                propertyRepository: MapPropertyRepository(
+                  remote: FirebaseMapPropertyRemoteDataSource(),
+                ),
+              ),
             ),
-            propertyRepository: MapPropertyRepository(
-              remote: FirebaseMapPropertyRemoteDataSource(),
+            BlocProvider<MapPlaceSearchCubit>(
+              create: (context) => MapPlaceSearchCubit(
+                repository: MapPlaceSearchRepository(
+                  remote: DioGoongPlaceRemoteDataSource(),
+                ),
+              ),
             ),
-          )..initialize(),
+          ],
           child: const MapSearchScreen(),
         ),
       ),

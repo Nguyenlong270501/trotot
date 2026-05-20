@@ -1,16 +1,14 @@
 import '../../../home/data/models/property_model.dart';
 import '../../../../core/utils/property_helper.dart';
+import '../../map_search_constants.dart';
 import '../models/map_property_pin.dart';
 
 abstract final class MapPropertyPinMapper {
-  static const int mapFilterPinLimit = 50;
-
   static MapPropertyPin fromProperty(PropertyModel property) {
-    final location = property.location!;
     return MapPropertyPin(
       propertyId: property.propertyId,
-      latitude: location.latitude,
-      longitude: location.longitude,
+      latitude: property.latitude!,
+      longitude: property.longitude!,
       priceLabel: PropertyHelper.mapMarkerPriceLabel(
         minRoomPrice: property.minRoomPrice,
         maxRoomPrice: property.maxRoomPrice,
@@ -20,13 +18,17 @@ abstract final class MapPropertyPinMapper {
 
   static List<MapPropertyPin> fromProperties(List<PropertyModel> properties) {
     return properties
-        .where((property) => property.location != null)
-        .take(mapFilterPinLimit)
+        .where(
+          (property) => property.latitude != null && property.longitude != null,
+        )
+        .take(MapSearchConstants.mapPropertyRenderLimit)
         .map(fromProperty)
         .toList();
   }
 
   static String resultsSignature(List<PropertyModel> properties) {
-    return properties.map((p) => p.propertyId).join(',');
+    return properties
+        .map((p) => '${p.propertyId}:${p.latitude}:${p.longitude}')
+        .join(',');
   }
 }

@@ -7,17 +7,17 @@ import '../../../../core/theme/app_colors.dart';
 class MapSearchMapControls extends StatelessWidget {
   const MapSearchMapControls({
     super.key,
+    this.top = 12,
     this.onMyLocationTap,
-    this.onSearchAreaTap,
   });
 
-  final VoidCallback? onSearchAreaTap;
+  final double top;
   final VoidCallback? onMyLocationTap;
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: 12.h,
+      top: top.h,
       right: 12.w,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -27,9 +27,9 @@ class MapSearchMapControls extends StatelessWidget {
             onTap: onMyLocationTap,
           ),
           SizedBox(height: 8.h),
-          _MapControlIconButton(
+          const _MapControlIconButton(
             icon: Icons.location_on_outlined,
-            onTap: onSearchAreaTap,
+            onTap: null,
           ),
         ],
       ),

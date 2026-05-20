@@ -10,9 +10,11 @@ import '../../../../core/widgets/app_alerts.dart';
 import '../../../home/data/models/property_model.dart';
 import '../../../search/blocs/room_filter/room_filter_cubit.dart';
 import '../../../search/blocs/room_filter/room_filter_state.dart';
+import '../../data/models/goong_place_detail_model.dart';
 import '../../data/models/map_property_pin.dart';
 import '../../data/models/map_visible_bounds.dart';
 import '../../map_search_constants.dart';
+import '../blocs/map_place_search/map_place_search_cubit.dart';
 import '../blocs/map_search/map_search_cubit.dart';
 import '../blocs/map_search/map_search_state.dart';
 import '../widgets/map_filter_bottom_sheet.dart';
@@ -21,6 +23,7 @@ import '../widgets/map_loading_overlay.dart';
 import '../widgets/map_location_pin_marker.dart';
 import '../widgets/map_property_marker_registry.dart';
 import '../widgets/map_search_map_controls.dart';
+import '../widgets/map_search_top_bar.dart';
 import '../widgets/map_search_view.dart';
 import '../widgets/map_selection_card_overlay.dart';
 
@@ -44,7 +47,16 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   Timer? _regionSearchDebounce;
   MapVisibleBounds? _lastSearchBounds;
   var _fitFilterPinsOnNextSync = false;
+  var _didInitializeMapSearch = false;
   MapSearchCubit? _mapSearchCubit;
+  final ValueNotifier<bool> _isFilterSheetOpenNotifier = ValueNotifier<bool>(
+    false,
+  );
+  final ValueNotifier<bool> _isPlaceSearchFocusedNotifier = ValueNotifier<bool>(
+    false,
+  );
+  final MapSearchTopBarController _placeSearchTopBarController =
+      MapSearchTopBarController();
   final MapPropertyMarkerRegistry _propertyMarkerRegistry =
       MapPropertyMarkerRegistry();
 
@@ -52,12 +64,23 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   void initState() {
     super.initState();
     MapLibreMap.useHybridComposition = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _didInitializeMapSearch) {
+        return;
+      }
+      _didInitializeMapSearch = true;
+      final cubit = context.read<MapSearchCubit>();
+      _mapSearchCubit = cubit;
+      _queueCurrentMapState();
+      unawaited(cubit.initialize());
+    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _mapSearchCubit = context.read<MapSearchCubit>();
+    _queueCurrentMapState();
   }
 
   @override
@@ -65,6 +88,8 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     _regionSearchDebounce?.cancel();
     MapLocationPinMarker.reset();
     MapPropertyMarkerRegistry.reset();
+    _isFilterSheetOpenNotifier.dispose();
+    _isPlaceSearchFocusedNotifier.dispose();
     _mapController = null;
     _locationSymbol = null;
     super.dispose();
@@ -106,6 +131,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     if (_isWithinSymbolTapGracePeriod()) {
       return;
     }
+    _placeSearchTopBarController.unfocus();
     _dismissSelection();
   }
 
@@ -118,7 +144,15 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   void _onCameraMove(CameraPosition position) {
     if (!_centeringSelection) {
       _latestZoom = position.zoom;
+      context.read<MapPlaceSearchCubit>().updateBias(
+        latitude: position.target.latitude,
+        longitude: position.target.longitude,
+      );
     }
+  }
+
+  void _onCameraIdle() {
+    _scheduleRegionSearch();
   }
 
   void _scheduleRegionSearch({bool forceBounds = false}) {
@@ -250,11 +284,21 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   }
 
   void _queueMapState(MapSearchState state) {
-    if (state.isResolvingLocation) {
+    if (state.isResolvingLocation || state.isFilterMode) {
       return;
     }
     _pendingMapState = state;
     _tryApplyMapState();
+  }
+
+  void _queueCurrentMapState() {
+    final cubit = _mapSearchCubit;
+    if (cubit == null ||
+        cubit.state.isResolvingLocation ||
+        cubit.state.isFilterMode) {
+      return;
+    }
+    _queueMapState(cubit.state);
   }
 
   void _tryApplyMapState() {
@@ -263,6 +307,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     if (!mounted || state == null || controller == null || !_styleLoaded) {
       return;
     }
+    _pendingMapState = null;
     unawaited(_applyMapState(controller, state));
   }
 
@@ -384,10 +429,23 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     }
 
     mapCubit.applyFilterResults(results);
-    _fitFilterPinsOnNextSync = true;
+    _fitFilterPinsOnNextSync = false;
+    unawaited(_syncAndFitFilterResults());
 
     if (results.isEmpty) {
       Alerts.of(context).showError('Không tìm thấy phòng phù hợp với bộ lọc');
+    }
+  }
+
+  Future<void> _syncAndFitFilterResults() async {
+    final mapCubit = _mapSearchCubit;
+    if (mapCubit == null || !mapCubit.state.isFilterMode) {
+      return;
+    }
+
+    await _syncPropertyMarkers(mapCubit.state);
+    if (mapCubit.state.properties.isNotEmpty) {
+      await _fitCameraToPins(mapCubit.state.properties);
     }
   }
 
@@ -410,11 +468,96 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     unawaited(_syncPropertyMarkers(mapCubit.state));
   }
 
-  void _openMapFilterSheet() {
-    showMapFilterBottomSheet(
-      context,
-      onFilterApplied: _onMapFilterAppliedFromSheet,
+  Future<void> _openMapFilterSheet() async {
+    if (_isFilterSheetOpenNotifier.value) {
+      return;
+    }
+    _isFilterSheetOpenNotifier.value = true;
+    try {
+      await showMapFilterBottomSheet(
+        context,
+        onFilterApplied: _onMapFilterAppliedFromSheet,
+      );
+    } finally {
+      if (mounted) {
+        _isFilterSheetOpenNotifier.value = false;
+      }
+    }
+  }
+
+  Future<void> _refreshPlaceSearchBias() async {
+    final mapCubit = _mapSearchCubit;
+    if (mapCubit == null) {
+      return;
+    }
+
+    var biasLatitude = mapCubit.state.latitude;
+    var biasLongitude = mapCubit.state.longitude;
+    final controller = _mapController;
+    if (controller != null && _styleLoaded) {
+      try {
+        final position = await controller.queryCameraPosition();
+        final target = position?.target;
+        if (target != null) {
+          biasLatitude = target.latitude;
+          biasLongitude = target.longitude;
+        }
+      } catch (_) {}
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    context.read<MapPlaceSearchCubit>().updateBias(
+      latitude: biasLatitude,
+      longitude: biasLongitude,
     );
+  }
+
+  Future<void> _moveToPlace(GoongPlaceDetailModel place) async {
+    final controller = _mapController;
+    final mapCubit = _mapSearchCubit;
+    if (controller == null || !_styleLoaded || mapCubit == null || !mounted) {
+      return;
+    }
+
+    if (mapCubit.state.isFilterMode) {
+      await context.read<RoomFilterCubit>().stopFilterWatch();
+      if (!mounted) return;
+      mapCubit.exitFilterMode();
+      await _propertyMarkerRegistry.clear(controller);
+    } else {
+      mapCubit.clearSelection();
+    }
+
+    _suppressRegionSearch = true;
+    try {
+      await controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(place.latitude, place.longitude),
+            zoom: _mapZoom,
+          ),
+        ),
+        duration: MapSearchConstants.selectionCameraDuration,
+      );
+      final position = await controller.queryCameraPosition();
+      if (position != null) {
+        _latestZoom = position.zoom;
+      } else {
+        _latestZoom = _mapZoom;
+      }
+      _lastSearchBounds = null;
+    } catch (_) {
+      if (mounted) {
+        Alerts.of(context).showError('Không thể di chuyển tới địa điểm này');
+      }
+    } finally {
+      _suppressRegionSearch = false;
+    }
+
+    _scheduleRegionSearch(forceBounds: true);
   }
 
   Future<void> _clearMapFilter() async {
@@ -426,6 +569,10 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     }
     _lastSearchBounds = null;
     _scheduleRegionSearch(forceBounds: true);
+  }
+
+  void _onPlaceSearchFocusChanged(bool hasFocus) {
+    _isPlaceSearchFocusedNotifier.value = hasFocus;
   }
 
   @override
@@ -502,6 +649,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
         ],
 
         child: Scaffold(
+          resizeToAvoidBottomInset: false,
           appBar: AppBar(
             title: const Text('Tìm trên bản đồ'),
             centerTitle: true,
@@ -509,7 +657,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
               IconButton(
                 icon: const Icon(Icons.tune_outlined),
                 tooltip: 'Bộ lọc',
-                onPressed: _openMapFilterSheet,
+                onPressed: () => unawaited(_openMapFilterSheet()),
               ),
             ],
           ),
@@ -522,7 +670,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
                 onMapCreated: _onMapCreated,
                 onStyleLoaded: _onStyleLoaded,
                 onCameraMove: _onCameraMove,
-                onCameraIdle: _scheduleRegionSearch,
+                onCameraIdle: _onCameraIdle,
                 onMapClick: _onMapClick,
               ),
 
@@ -536,8 +684,12 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
                     previous.selectedProperty != current.selectedProperty ||
                     previous.isLoadingSelectedProperty !=
                         current.isLoadingSelectedProperty ||
+                    previous.selectedPropertyError !=
+                        current.selectedPropertyError ||
                     previous.isFilterMode != current.isFilterMode ||
-                    previous.filteredResultCount != current.filteredResultCount,
+                    previous.filteredResultCount !=
+                        current.filteredResultCount ||
+                    previous.filteredPinnedCount != current.filteredPinnedCount,
                 builder: (context, state) {
                   return Stack(
                     fit: StackFit.expand,
@@ -545,14 +697,8 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
                       MapLoadingOverlay(
                         isResolvingLocation: state.isResolvingLocation,
                         isLoadingProperties: state.isLoadingProperties,
+                        top: 72,
                       ),
-                      if (state.selectedPropertyId != null)
-                        Positioned.fill(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onTap: _dismissSelection,
-                          ),
-                        ),
                       MapSelectionCardOverlay(
                         state: state,
                         onOpenDetails: _openPropertyDetails,
@@ -567,12 +713,45 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
                             top: false,
                             child: MapFilterResultBar(
                               count: state.filteredResultCount,
+                              pinnedCount: state.filteredPinnedCount,
                               onClear: () => unawaited(_clearMapFilter()),
                             ),
                           ),
                         ),
-                      MapSearchMapControls(onMyLocationTap: _onMyLocationTap),
                     ],
+                  );
+                },
+              ),
+
+              ValueListenableBuilder<bool>(
+                valueListenable: _isFilterSheetOpenNotifier,
+                builder: (context, isFilterSheetOpen, child) {
+                  if (isFilterSheetOpen) {
+                    return const SizedBox.shrink();
+                  }
+                  return Positioned(
+                    left: 16.w,
+                    right: 16.w,
+                    top: 12.h,
+                    child: MapSearchTopBar(
+                      controller: _placeSearchTopBarController,
+                      onFocus: () => unawaited(_refreshPlaceSearchBias()),
+                      onFocusChanged: _onPlaceSearchFocusChanged,
+                      onPlaceSelected: _moveToPlace,
+                    ),
+                  );
+                },
+              ),
+
+              ValueListenableBuilder<bool>(
+                valueListenable: _isPlaceSearchFocusedNotifier,
+                builder: (context, isFocused, child) {
+                  if (isFocused) {
+                    return const SizedBox.shrink();
+                  }
+                  return MapSearchMapControls(
+                    top: 72,
+                    onMyLocationTap: _onMyLocationTap,
                   );
                 },
               ),

@@ -84,6 +84,7 @@ class MapSearchCubit extends Cubit<MapSearchState> {
         selectedPropertyId: propertyId,
         selectedProperty: null,
         isLoadingSelectedProperty: true,
+        selectedPropertyError: null,
       ),
     );
 
@@ -95,10 +96,22 @@ class MapSearchCubit extends Cubit<MapSearchState> {
         return;
       }
 
+      if (property == null) {
+        emit(
+          state.copyWith(
+            selectedProperty: null,
+            isLoadingSelectedProperty: false,
+            selectedPropertyError: 'Không tìm thấy dữ liệu phòng này',
+          ),
+        );
+        return;
+      }
+
       emit(
         state.copyWith(
           selectedProperty: property,
           isLoadingSelectedProperty: false,
+          selectedPropertyError: null,
         ),
       );
     } catch (_) {
@@ -109,6 +122,7 @@ class MapSearchCubit extends Cubit<MapSearchState> {
         state.copyWith(
           selectedProperty: null,
           isLoadingSelectedProperty: false,
+          selectedPropertyError: 'Không thể tải dữ liệu phòng này',
         ),
       );
     }
@@ -121,6 +135,7 @@ class MapSearchCubit extends Cubit<MapSearchState> {
         selectedPropertyId: null,
         selectedProperty: null,
         isLoadingSelectedProperty: false,
+        selectedPropertyError: null,
       ),
     );
   }
@@ -135,6 +150,7 @@ class MapSearchCubit extends Cubit<MapSearchState> {
         selectedPropertyId: null,
         selectedProperty: null,
         isLoadingSelectedProperty: false,
+        selectedPropertyError: null,
       ),
     );
   }
@@ -155,12 +171,14 @@ class MapSearchCubit extends Cubit<MapSearchState> {
       state.copyWith(
         isFilterMode: true,
         filteredResultCount: properties.length,
+        filteredPinnedCount: pins.length,
         filteredResultsSignature: signature,
         properties: pins,
         isLoadingProperties: false,
         selectedPropertyId: null,
         selectedProperty: null,
         isLoadingSelectedProperty: false,
+        selectedPropertyError: null,
       ),
     );
   }
@@ -172,12 +190,14 @@ class MapSearchCubit extends Cubit<MapSearchState> {
       state.copyWith(
         isFilterMode: false,
         filteredResultCount: 0,
+        filteredPinnedCount: 0,
         filteredResultsSignature: null,
         properties: [],
         isLoadingProperties: false,
         selectedPropertyId: null,
         selectedProperty: null,
         isLoadingSelectedProperty: false,
+        selectedPropertyError: null,
       ),
     );
   }

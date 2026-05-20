@@ -8,10 +8,12 @@ class MapFilterResultBar extends StatelessWidget {
   const MapFilterResultBar({
     super.key,
     required this.count,
+    required this.pinnedCount,
     required this.onClear,
   });
 
   final int count;
+  final int pinnedCount;
   final VoidCallback onClear;
 
   @override
@@ -30,9 +32,27 @@ class MapFilterResultBar extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(
-                label,
-                style: AppTypography.medium14(color: AppColors.textPrimary),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: AppTypography.medium14(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (count > 0 && pinnedCount != count)
+                    Padding(
+                      padding: EdgeInsets.only(top: 2.h),
+                      child: Text(
+                        'Hiển thị $pinnedCount vị trí trên bản đồ',
+                        style: AppTypography.medium12(
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             IconButton(

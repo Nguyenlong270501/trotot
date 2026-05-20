@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_style.dart';
 import '../../../home/data/models/property_model.dart';
 import '../blocs/map_search/map_search_cubit.dart';
 import '../blocs/map_search/map_search_state.dart';
@@ -59,8 +60,14 @@ class _MapSelectionCardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (state.isLoadingSelectedProperty || state.selectedProperty == null) {
+    if (state.isLoadingSelectedProperty) {
       return const _MapCardSkeleton();
+    }
+
+    if (state.selectedProperty == null) {
+      return _MapCardError(
+        message: state.selectedPropertyError ?? 'Không thể tải dữ liệu phòng',
+      );
     }
 
     final property = state.selectedProperty!;
@@ -68,6 +75,52 @@ class _MapSelectionCardBody extends StatelessWidget {
       property: property,
       onClose: context.read<MapSearchCubit>().clearSelection,
       onTap: () => onOpenDetails(property),
+    );
+  }
+}
+
+class _MapCardError extends StatelessWidget {
+  const _MapCardError({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: MapSelectionCardOverlay.cardWidth.w,
+      padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 14.h),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18.r),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowSoft,
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            size: 28.sp,
+            color: AppColors.textMuted,
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: AppTypography.medium14(color: AppColors.textPrimary),
+          ),
+          SizedBox(height: 10.h),
+          TextButton(
+            onPressed: context.read<MapSearchCubit>().clearSelection,
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
     );
   }
 }

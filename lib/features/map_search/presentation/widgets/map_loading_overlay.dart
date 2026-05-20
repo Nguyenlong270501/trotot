@@ -7,10 +7,12 @@ class MapLoadingOverlay extends StatelessWidget {
     super.key,
     required this.isResolvingLocation,
     required this.isLoadingProperties,
+    this.top = 12,
   });
 
   final bool isResolvingLocation;
   final bool isLoadingProperties;
+  final double top;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +25,7 @@ class MapLoadingOverlay extends StatelessWidget {
     if (label == null) return const SizedBox.shrink();
 
     return Positioned(
-      top: 12.h,
+      top: top.h,
       left: 0,
       right: 0,
       child: Center(child: LoadingStatusChip(label: label)),

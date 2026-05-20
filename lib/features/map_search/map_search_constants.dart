@@ -8,7 +8,11 @@ abstract final class MapSearchConstants {
 
   static const Duration regionSearchDebounce = Duration(milliseconds: 700);
 
-  static const int mapPropertyQueryLimit = 50;
+  /// Firestore fetch pool for latitude-range queries; longitude is filtered client-side.
+  static const int mapPropertyFetchLimit = 500;
+
+  /// Maximum number of property pins rendered on the map at once.
+  static const int mapPropertyRenderLimit = 50;
 
   static const Duration selectionCameraDuration = Duration(milliseconds: 400);
 }

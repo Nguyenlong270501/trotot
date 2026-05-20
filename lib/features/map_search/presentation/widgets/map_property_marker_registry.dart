@@ -3,7 +3,6 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import '../../data/models/map_property_pin.dart';
 import 'map_price_label_bitmap.dart';
 
-/// Diff-sync price-label markers; selection uses [MapLibreMapController.updateSymbol].
 class MapPropertyMarkerRegistry {
   final Map<String, Symbol> _symbolsByPropertyId = {};
   final Map<String, MapPropertyPin> _pinsByPropertyId = {};

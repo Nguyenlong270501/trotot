@@ -21,10 +21,6 @@ class FirebaseMapPropertyRemoteDataSource
 
   final FirebaseFirestore _firestore;
 
-  /// Firestore does not support range queries on [GeoPoint] subfields reliably.
-  /// MVP: fetch a pool of approved listings, then filter by visible bounds client-side.
-  static const int _clientFilterPoolLimit = 200;
-
   @override
   Future<List<MapPropertyPin>> fetchApprovedInBounds(
     MapVisibleBounds bounds,
@@ -32,19 +28,21 @@ class FirebaseMapPropertyRemoteDataSource
     final snapshot = await _firestore
         .collection('properties')
         .where('status', isEqualTo: 'approved')
-        .limit(_clientFilterPoolLimit)
+        .where('latitude', isGreaterThanOrEqualTo: bounds.southwestLat)
+        .where('latitude', isLessThanOrEqualTo: bounds.northeastLat)
+        .orderBy('latitude')
+        .limit(MapSearchConstants.mapPropertyFetchLimit)
         .get();
 
     final pins = <MapPropertyPin>[];
     for (final doc in snapshot.docs) {
       final data = doc.data();
-      final location = _readLocation(data['location']);
-      if (location == null) {
+      final lat = _readDouble(data['latitude']);
+      final lng = _readDouble(data['longitude']);
+      if (lat == null || lng == null) {
         continue;
       }
 
-      final lat = location.latitude;
-      final lng = location.longitude;
       if (!bounds.containsPoint(lat, lng)) {
         continue;
       }
@@ -61,7 +59,7 @@ class FirebaseMapPropertyRemoteDataSource
         ),
       );
 
-      if (pins.length >= MapSearchConstants.mapPropertyQueryLimit) {
+      if (pins.length >= MapSearchConstants.mapPropertyRenderLimit) {
         break;
       }
     }
@@ -102,24 +100,6 @@ class FirebaseMapPropertyRemoteDataSource
     return PropertyModel.fromMap(data).copyWith(rooms: rooms);
   }
 
-  static GeoPoint? _readLocation(dynamic value) {
-    if (value is GeoPoint) {
-      return value;
-    }
-    if (value is Map) {
-      final lat = (value['latitude'] ?? value['_latitude']);
-      final lng = (value['longitude'] ?? value['_longitude']);
-      if (lat == null || lng == null) {
-        return null;
-      }
-      return GeoPoint(
-        (lat as num).toDouble(),
-        (lng as num).toDouble(),
-      );
-    }
-    return null;
-  }
-
   static int? _readInt(dynamic value) {
     if (value == null) {
       return null;
@@ -129,6 +109,13 @@ class FirebaseMapPropertyRemoteDataSource
     }
     if (value is num) {
       return value.toInt();
+    }
+    return null;
+  }
+
+  static double? _readDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
     }
     return null;
   }

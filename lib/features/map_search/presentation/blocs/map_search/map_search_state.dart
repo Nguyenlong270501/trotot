@@ -15,8 +15,10 @@ class MapSearchState extends Equatable {
     required this.selectedPropertyId,
     required this.selectedProperty,
     required this.isLoadingSelectedProperty,
+    this.selectedPropertyError,
     required this.isFilterMode,
     required this.filteredResultCount,
+    required this.filteredPinnedCount,
     this.filteredResultsSignature,
   });
 
@@ -31,8 +33,10 @@ class MapSearchState extends Equatable {
       selectedPropertyId: null,
       selectedProperty: null,
       isLoadingSelectedProperty: false,
+      selectedPropertyError: null,
       isFilterMode: false,
       filteredResultCount: 0,
+      filteredPinnedCount: 0,
       filteredResultsSignature: null,
     );
   }
@@ -46,8 +50,10 @@ class MapSearchState extends Equatable {
   final String? selectedPropertyId;
   final PropertyModel? selectedProperty;
   final bool isLoadingSelectedProperty;
+  final String? selectedPropertyError;
   final bool isFilterMode;
   final int filteredResultCount;
+  final int filteredPinnedCount;
   final String? filteredResultsSignature;
 
   static const Object _unset = Object();
@@ -62,8 +68,10 @@ class MapSearchState extends Equatable {
     Object? selectedPropertyId = _unset,
     Object? selectedProperty = _unset,
     bool? isLoadingSelectedProperty,
+    Object? selectedPropertyError = _unset,
     bool? isFilterMode,
     int? filteredResultCount,
+    int? filteredPinnedCount,
     Object? filteredResultsSignature = _unset,
   }) {
     return MapSearchState(
@@ -81,8 +89,12 @@ class MapSearchState extends Equatable {
           : selectedProperty as PropertyModel?,
       isLoadingSelectedProperty:
           isLoadingSelectedProperty ?? this.isLoadingSelectedProperty,
+      selectedPropertyError: selectedPropertyError == _unset
+          ? this.selectedPropertyError
+          : selectedPropertyError as String?,
       isFilterMode: isFilterMode ?? this.isFilterMode,
       filteredResultCount: filteredResultCount ?? this.filteredResultCount,
+      filteredPinnedCount: filteredPinnedCount ?? this.filteredPinnedCount,
       filteredResultsSignature: filteredResultsSignature == _unset
           ? this.filteredResultsSignature
           : filteredResultsSignature as String?,
@@ -100,8 +112,10 @@ class MapSearchState extends Equatable {
     selectedPropertyId,
     selectedProperty,
     isLoadingSelectedProperty,
+    selectedPropertyError,
     isFilterMode,
     filteredResultCount,
+    filteredPinnedCount,
     filteredResultsSignature,
   ];
 }

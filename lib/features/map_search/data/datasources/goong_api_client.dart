@@ -18,6 +18,17 @@ abstract final class GoongApiClient {
         'input': input,
         'location': '$latitude,$longitude',
         'limit': '$limit',
+        'has_deprecated_administrative_unit': 'true',
+      },
+    );
+  }
+
+  static Uri detailUri({required String placeId}) {
+    return Uri.parse('$baseUrl/place/detail').replace(
+      queryParameters: {
+        'api_key': apiKey,
+        'place_id': placeId,
+        'has_deprecated_administrative_unit': 'true',
       },
     );
   }
