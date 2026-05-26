@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_style.dart';
 import '../../data/models/goong_autocomplete_prediction_model.dart';
@@ -93,10 +94,7 @@ class _MapSearchTopBarState extends State<MapSearchTopBar> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _SearchField(
-            controller: _controller,
-            focusNode: _focusNode,
-          ),
+          _SearchField(controller: _controller, focusNode: _focusNode),
           ValueListenableBuilder<bool>(
             valueListenable: _hasFocusNotifier,
             builder: (context, hasFocus, child) {
@@ -106,7 +104,7 @@ class _MapSearchTopBarState extends State<MapSearchTopBar> {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(height: 6.h),
+                  AppSizes.gapH4,
                   _SuggestionDropdown(
                     onSelected: (place) async {
                       _focusNode.unfocus();
@@ -124,10 +122,7 @@ class _MapSearchTopBarState extends State<MapSearchTopBar> {
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField({
-    required this.controller,
-    required this.focusNode,
-  });
+  const _SearchField({required this.controller, required this.focusNode});
 
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -137,8 +132,8 @@ class _SearchField extends StatelessWidget {
     return Material(
       color: AppColors.surface,
       elevation: 4,
-      shadowColor: Colors.black.withValues(alpha: 0.14),
-      borderRadius: BorderRadius.circular(14.r),
+      shadowColor: AppColors.shadowSoft,
+      borderRadius: BorderRadius.circular(12.r),
       child: SizedBox(
         height: 48.h,
         child: TextField(
@@ -174,17 +169,25 @@ class _SearchField extends StatelessWidget {
                   return const SizedBox.shrink();
                 }
                 return IconButton(
+                  constraints: BoxConstraints.tightFor(
+                    width: 48.w,
+                    height: 48.h,
+                  ),
                   onPressed: () {
                     controller.clear();
                     context.read<MapPlaceSearchCubit>().onQueryChanged('');
                     focusNode.requestFocus();
                   },
-                  icon: const Icon(Icons.close_rounded),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 22.sp,
+                    color: AppColors.textSecondary,
+                  ),
                 );
               },
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14.r),
+              borderRadius: BorderRadius.circular(12.r),
               borderSide: BorderSide.none,
             ),
             contentPadding: EdgeInsets.symmetric(vertical: 12.h),
@@ -218,14 +221,12 @@ class _SuggestionDropdown extends StatelessWidget {
         return Material(
           color: AppColors.surface,
           elevation: 4,
-          shadowColor: Colors.black.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(14.r),
+          shadowColor: AppColors.shadowSoft,
+          borderRadius: BorderRadius.circular(10.r),
+          clipBehavior: Clip.antiAlias,
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: 280.h),
-            child: _SuggestionContent(
-              state: state,
-              onSelected: onSelected,
-            ),
+            constraints: BoxConstraints(maxHeight: 220.h),
+            child: _SuggestionContent(state: state, onSelected: onSelected),
           ),
         );
       },
@@ -234,10 +235,7 @@ class _SuggestionDropdown extends StatelessWidget {
 }
 
 class _SuggestionContent extends StatelessWidget {
-  const _SuggestionContent({
-    required this.state,
-    required this.onSelected,
-  });
+  const _SuggestionContent({required this.state, required this.onSelected});
 
   final MapPlaceSearchState state;
   final Future<void> Function(GoongPlaceDetailModel place) onSelected;
@@ -252,20 +250,27 @@ class _SuggestionContent extends StatelessWidget {
       return _DropdownError(message: state.errorMessage!);
     }
     if (state.isSearching && state.predictions.isEmpty) {
-      return const _DropdownMessage(text: 'Đang tải gợi ý...');
+      return const _DropdownMessage(
+        text: 'Đang tải gợi ý...',
+        showSpinner: true,
+      );
     }
     if (state.isResolvingPlace) {
-      return const _DropdownMessage(text: 'Đang lấy vị trí địa điểm...');
+      return const _DropdownMessage(
+        text: 'Đang lấy vị trí địa điểm...',
+        showSpinner: true,
+      );
     }
     if (state.predictions.isEmpty) {
       return const _DropdownMessage(text: 'Không tìm thấy địa điểm');
     }
 
     return ListView.separated(
-      padding: EdgeInsets.symmetric(vertical: 6.h),
+      padding: EdgeInsets.zero,
       shrinkWrap: true,
       itemCount: state.predictions.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, __) =>
+          const Divider(height: 1, thickness: 1, color: AppColors.divider),
       itemBuilder: (context, index) {
         return _SuggestionTile(
           prediction: state.predictions[index],
@@ -277,45 +282,40 @@ class _SuggestionContent extends StatelessWidget {
 }
 
 class _SuggestionTile extends StatelessWidget {
-  const _SuggestionTile({
-    required this.prediction,
-    required this.onSelected,
-  });
+  const _SuggestionTile({required this.prediction, required this.onSelected});
 
   final GoongAutocompletePredictionModel prediction;
   final Future<void> Function(GoongPlaceDetailModel place) onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
-      leading: Icon(
-        Icons.place_outlined,
-        size: 21.sp,
-        color: AppColors.info,
+    return SizedBox(
+      height: 64.h,
+      child: ListTile(
+        minLeadingWidth: 24.w,
+        horizontalTitleGap: 8.w,
+        contentPadding: EdgeInsets.symmetric(horizontal: 14.w),
+        leading: Icon(
+          Icons.location_on_outlined,
+          size: 24.sp,
+          color: AppColors.primary,
+        ),
+        title: Text(
+          prediction.description,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.bold14(
+            color: AppColors.textPrimary,
+          ).copyWith(height: 1.2),
+        ),
+        onTap: () async {
+          final cubit = context.read<MapPlaceSearchCubit>();
+          final detail = await cubit.selectPrediction(prediction);
+          if (detail != null) {
+            await onSelected(detail);
+          }
+        },
       ),
-      title: Text(
-        prediction.mainText,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: AppTypography.bold14(color: AppColors.textPrimary),
-      ),
-      subtitle: prediction.secondaryText.isEmpty
-          ? null
-          : Text(
-              prediction.secondaryText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.medium12(color: AppColors.textMuted),
-            ),
-      onTap: () async {
-        final cubit = context.read<MapPlaceSearchCubit>();
-        final detail = await cubit.selectPrediction(prediction);
-        if (detail != null) {
-          await onSelected(detail);
-        }
-      },
     );
   }
 }
@@ -327,14 +327,21 @@ class _DropdownError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+    return SizedBox(
+      height: 58.h,
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              message,
-              style: AppTypography.medium12(color: AppColors.textPrimary),
+            child: Padding(
+              padding: EdgeInsets.only(left: 14.w),
+              child: Text(
+                message,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.medium12(
+                  color: AppColors.textPrimary,
+                ).copyWith(height: 1.2),
+              ),
             ),
           ),
           TextButton(
@@ -348,18 +355,36 @@ class _DropdownError extends StatelessWidget {
 }
 
 class _DropdownMessage extends StatelessWidget {
-  const _DropdownMessage({required this.text});
+  const _DropdownMessage({required this.text, this.showSpinner = false});
 
   final String text;
+  final bool showSpinner;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: AppTypography.medium12(color: AppColors.textMuted),
+    return SizedBox(
+      height: 58.h,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (showSpinner) ...[
+            SizedBox(
+              width: 16.w,
+              height: 16.w,
+              child: const CircularProgressIndicator(strokeWidth: 2),
+            ),
+            AppSizes.gapW10,
+          ],
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: AppTypography.medium12(color: AppColors.textMuted),
+            ),
+          ),
+        ],
       ),
     );
   }

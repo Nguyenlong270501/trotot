@@ -32,15 +32,15 @@ class FCMService {
   bool _initialized = false;
   bool _isLoggingOut = false;
 
-  static const String _channelId = 'quan_ly_tro_notification_channel';
-  static const String _channelName = 'Thông báo Quản lý trọ';
+  static const String _channelId = 'tro_tot_notification_channel';
+  static const String _channelName = 'Thông báo Trọ Tốt';
 
   static const AndroidNotificationChannel _androidChannel =
       AndroidNotificationChannel(
         _channelId,
         _channelName,
         description:
-            'Kênh nhận thông báo về lịch hẹn, bài đăng và hệ thống Quản lý trọ',
+            'Kênh nhận thông báo về lịch hẹn, bài đăng và hệ thống Trọ Tốt',
         importance: Importance.max,
         playSound: true,
       );
@@ -162,7 +162,6 @@ class FCMService {
   }
 
 
-  /// Xóa `fcmTokens` trên Firestore — gọi **trước** `signOut()` (còn đăng nhập).
   Future<void> clearUserFcmTokensOnFirestore(String userId) async {
     final normalizedUserId = userId.trim();
     if (normalizedUserId.isEmpty) {
@@ -186,7 +185,6 @@ class FCMService {
     }
   }
 
-  /// Xóa token FCM trên thiết bị — gọi **sau** `signOut()` để tránh `onTokenRefresh` ghi lại.
   Future<void> deleteLocalMessagingToken() async {
     try {
       await _fcm.deleteToken();
@@ -198,7 +196,6 @@ class FCMService {
     }
   }
 
-  /// ĐỒNG BỘ TOKEN CHỦ ĐỘNG: Đảm bảo an toàn, gọi sau khi đã kéo xong Data sạch từ Firestore về máy.
   Future<bool> _hasNotificationPermission() async {
     try {
       final settings = await _fcm.getNotificationSettings();

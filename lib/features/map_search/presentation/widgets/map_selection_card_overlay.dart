@@ -9,7 +9,6 @@ import '../blocs/map_search/map_search_cubit.dart';
 import '../blocs/map_search/map_search_state.dart';
 import 'property_map_card.dart';
 
-/// Property card pinned to the bottom while a map marker is selected.
 class MapSelectionCardOverlay extends StatelessWidget {
   const MapSelectionCardOverlay({
     super.key,
