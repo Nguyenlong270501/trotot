@@ -4,11 +4,13 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../../../core/constants/app_sizes.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_style.dart';
 import '../../../../../core/utils/property_helper.dart';
+import '../../../../../core/utils/property_share_content.dart';
 import '../../../../../core/widgets/app_alerts.dart';
 import '../../../../auth/blocs/auth_blocs/auth_cubit.dart';
 import '../../../../auth/blocs/auth_blocs/auth_state.dart';
@@ -174,6 +176,21 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
     }
   }
 
+  Future<void> _onShareTap(BuildContext context) async {
+    final property = context.read<PropertyDetailsLiveCubit>().state.property;
+    final box = context.findRenderObject() as RenderBox?;
+    await SharePlus.instance.share(
+      ShareParams(
+        text: PropertyShareContent.buildText(property),
+        title: property.title,
+        subject: property.title,
+        sharePositionOrigin: box == null
+            ? null
+            : box.localToGlobal(Offset.zero) & box.size,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = context.read<AuthenticationCubit>().state;
@@ -250,6 +267,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
               child: PropertyDetailsAppBar(
                 showSolidAppBar: _showSolidAppBar,
                 onFavoriteTap: () => _onFavoriteTap(context),
+                onShareTap: () => _onShareTap(context),
               ),
             ),
           ],

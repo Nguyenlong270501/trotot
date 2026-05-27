@@ -13,10 +13,12 @@ class PropertyDetailsAppBar extends StatelessWidget {
     super.key,
     required this.showSolidAppBar,
     required this.onFavoriteTap,
+    required this.onShareTap,
   });
 
   final ValueNotifier<bool> showSolidAppBar;
   final Future<void> Function() onFavoriteTap;
+  final Future<void> Function() onShareTap;
 
   @override
   Widget build(BuildContext context) {
@@ -29,10 +31,12 @@ class PropertyDetailsAppBar extends StatelessWidget {
               ? _SolidAppBar(
                   key: const ValueKey('solid_app_bar'),
                   onFavoriteTap: onFavoriteTap,
+                  onShareTap: onShareTap,
                 )
               : _OverlayAppBar(
                   key: const ValueKey('overlay_app_bar'),
                   onFavoriteTap: onFavoriteTap,
+                  onShareTap: onShareTap,
                 ),
         );
       },
@@ -44,9 +48,11 @@ class _OverlayAppBar extends StatelessWidget {
   const _OverlayAppBar({
     super.key,
     required this.onFavoriteTap,
+    required this.onShareTap,
   });
 
   final Future<void> Function() onFavoriteTap;
+  final Future<void> Function() onShareTap;
 
   @override
   Widget build(BuildContext context) {
@@ -63,9 +69,9 @@ class _OverlayAppBar extends StatelessWidget {
             ),
             Row(
               children: [
-                const _CircleActionButton(
+                _CircleActionButton(
                   icon: Icons.share_outlined,
-                  onTap: _noop,
+                  onTap: () => onShareTap(),
                 ),
                 SizedBox(width: 12.w),
                 _FavoriteCircleButton(onFavoriteTap: onFavoriteTap),
@@ -84,9 +90,11 @@ class _SolidAppBar extends StatelessWidget {
   const _SolidAppBar({
     super.key,
     required this.onFavoriteTap,
+    required this.onShareTap,
   });
 
   final Future<void> Function() onFavoriteTap;
+  final Future<void> Function() onShareTap;
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +141,7 @@ class _SolidAppBar extends StatelessWidget {
                     size: 22.sp,
                     color: AppColors.textPrimary,
                   ),
-                  onPressed: _OverlayAppBar._noop,
+                  onPressed: () => onShareTap(),
                 ),
                 _FavoriteIconButton(onFavoriteTap: onFavoriteTap),
               ],

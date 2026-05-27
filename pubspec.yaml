@@ -68,6 +68,7 @@ dependencies:
   app_settings: ^7.0.0
   maplibre_gl: ^0.26.1
   geolocator: ^14.0.1
+  share_plus: ^13.1.0
 
 dev_dependencies:
   flutter_test:
