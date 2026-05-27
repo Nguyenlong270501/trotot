@@ -21,7 +21,6 @@ class HomeSuggestedRoomsCubit extends Cubit<HomeSuggestedRoomsState> {
   final HomeRepository _repository;
   String _selectedCity;
   String? _selectedCategory;
-  final Set<String> _disabledCategoryTypes = {};
 
   StreamSubscription<List<PropertyModel>>? _propertiesSub;
   Timer? _feedDebounce;
@@ -37,11 +36,10 @@ class HomeSuggestedRoomsCubit extends Cubit<HomeSuggestedRoomsState> {
     emit(
       HomeSuggestedRoomsLoading(
         selectedCity: _selectedCity,
-        disabledCategoryTypes: Set.unmodifiable(_disabledCategoryTypes),
+        disabledCategoryTypes: const {},
       ),
     );
 
-    await _refreshDisabledCategories();
     final completer = Completer<void>();
     await _subscribeToFeed(completer: completer);
     return completer.future;
@@ -56,10 +54,6 @@ class HomeSuggestedRoomsCubit extends Cubit<HomeSuggestedRoomsState> {
 
   Future<void> selectCategory(String categoryType) async {
     final normalized = PropertyConstants.normalizePropertyType(categoryType);
-    if (_disabledCategoryTypes.contains(normalized)) {
-      return;
-    }
-
     _selectedCategory = _selectedCategory == normalized ? null : normalized;
 
     final current = state;
@@ -75,39 +69,13 @@ class HomeSuggestedRoomsCubit extends Cubit<HomeSuggestedRoomsState> {
       emit(
         HomeSuggestedRoomsLoading(
           selectedCity: _selectedCity,
-          disabledCategoryTypes: Set.unmodifiable(_disabledCategoryTypes),
+          disabledCategoryTypes: const {},
           selectedCategory: _selectedCategory,
         ),
       );
     }
 
     await _subscribeToFeed();
-  }
-
-  Future<void> _refreshDisabledCategories() async {
-    final disabled = <String>{};
-
-    for (final type in PropertyConstants.propertyTypes) {
-      final normalized = PropertyConstants.normalizePropertyType(type);
-      final result = await _repository.hasApprovedPropertyForType(
-        city: _selectedCity,
-        propertyType: normalized,
-      );
-      result.fold((_) {}, (hasAny) {
-        if (!hasAny) {
-          disabled.add(normalized);
-        }
-      });
-    }
-
-    _disabledCategoryTypes
-      ..clear()
-      ..addAll(disabled);
-
-    if (_selectedCategory != null &&
-        _disabledCategoryTypes.contains(_selectedCategory)) {
-      _selectedCategory = null;
-    }
   }
 
   Future<void> _subscribeToFeed({Completer<void>? completer}) async {
@@ -140,7 +108,7 @@ class HomeSuggestedRoomsCubit extends Cubit<HomeSuggestedRoomsState> {
           HomeSuggestedRoomsFailure(
             error.toString(),
             selectedCity: _selectedCity,
-            disabledCategoryTypes: Set.unmodifiable(_disabledCategoryTypes),
+            disabledCategoryTypes: const {},
             selectedCategory: _selectedCategory,
           ),
         );
@@ -181,7 +149,7 @@ class HomeSuggestedRoomsCubit extends Cubit<HomeSuggestedRoomsState> {
         List<PropertyModel>.from(properties),
         selectedCategory: _selectedCategory,
         selectedCity: _selectedCity,
-        disabledCategoryTypes: Set.unmodifiable(_disabledCategoryTypes),
+        disabledCategoryTypes: const {},
         isRefreshingCategory: false,
       ),
     );

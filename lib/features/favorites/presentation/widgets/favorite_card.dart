@@ -49,7 +49,7 @@ class FavoriteCard extends StatelessWidget {
               width: double.infinity,
               child: images.isEmpty
                   ? const Center(child: Icon(Icons.home_work_outlined))
-                  : ImageCarousel(images: images),
+                  : ImageCarousel(images: images, enableFullScreenOnTap: false),
             ),
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 14.h),

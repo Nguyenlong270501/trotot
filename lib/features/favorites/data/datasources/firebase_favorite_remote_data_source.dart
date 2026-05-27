@@ -50,6 +50,7 @@ class FirebaseFavoriteRemoteDataSource implements FavoriteRemoteDataSource {
   @override
   Stream<List<FavoritePropertyModel>> watchFavorites({required String uid}) {
     return _favoritesRef(uid)
+        .where('status', isEqualTo: 'approved')
         .orderBy('favoritedAt', descending: true)
         .limit(maxFavoritesInStream)
         .snapshots()

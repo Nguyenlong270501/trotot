@@ -33,7 +33,7 @@ class LandlordInfoCard extends StatelessWidget {
         ? 'Chủ nhà'
         : summary.userName;
     final avatarUrl = summary.avatarUrl?.trim() ?? '';
-    // final phoneNumber = summary.phoneNumber?.trim() ?? '';
+    final phoneNumber = summary.phoneNumber?.trim() ?? '';
     final tenure = PropertyHelper.landlordHostingTenureLabel(summary.createdAt);
 
     return Column(
@@ -58,8 +58,26 @@ class LandlordInfoCard extends StatelessWidget {
                           color: AppColors.textPrimary,
                         ),
                       ),
+                      if (phoneNumber.isNotEmpty) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.phone_rounded,
+                              size: 14.sp,
+                              color: AppColors.textPrimary,
+                            ),
+                            AppSizes.gapW4,
+                            Text(
+                              phoneNumber,
+                              style: AppTypography.medium14(
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                       if (summary.isLandlord == true) ...[
-                        AppSizes.gapH4,
+                        AppSizes.gapH2,
                         Row(
                           children: [
                             Icon(
@@ -67,7 +85,7 @@ class LandlordInfoCard extends StatelessWidget {
                               size: 14.sp,
                               color: AppColors.successDark,
                             ),
-                            SizedBox(width: 4.w),
+                            AppSizes.gapW4,
                             Text(
                               'Đã xác minh',
                               style: AppTypography.medium12(
@@ -122,16 +140,6 @@ class LandlordInfoCard extends StatelessWidget {
                 ],
               ),
             ),
-            // if (phoneNumber.isNotEmpty) ...[
-            //   AppSizes.gapH8,
-            //   Align(
-            //     alignment: Alignment.centerLeft,
-            //     child: Text(
-            //       'SĐT: $phoneNumber',
-            //       style: AppTypography.medium14(color: AppColors.textPrimary),
-            //     ),
-            //   ),
-            // ],
           ],
         ),
         AppSizes.gapH16,

@@ -7,7 +7,7 @@ import '../../../../blocs/home_suggested_rooms/home_suggested_rooms_cubit.dart';
 import '../../../../blocs/home_suggested_rooms/home_suggested_rooms_state.dart';
 import 'category_item.dart';
 
-/// Category chips — rebuilds only when selection or disabled set changes.
+/// Category chips rebuild only when selection changes.
 class HomeCategoryBar extends StatelessWidget {
   const HomeCategoryBar({super.key});
 
@@ -44,13 +44,10 @@ class HomeCategoryBar extends StatelessWidget {
     return BlocSelector<
       HomeSuggestedRoomsCubit,
       HomeSuggestedRoomsState,
-      ({String? selected, Set<String> disabled})
+      String?
     >(
-      selector: (state) => (
-        selected: state.selectedCategory,
-        disabled: state.disabledCategoryTypes,
-      ),
-      builder: (context, data) {
+      selector: (state) => state.selectedCategory,
+      builder: (context, selectedCategory) {
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -62,15 +59,11 @@ class HomeCategoryBar extends StatelessWidget {
                   icon: _categories[i].icon,
                   label: _categories[i].label,
                   isActive:
-                      data.selected ==
+                      selectedCategory ==
                       PropertyConstants.normalizePropertyType(
                         _categories[i].propertyType,
                       ),
-                  isDisabled: data.disabled.contains(
-                    PropertyConstants.normalizePropertyType(
-                      _categories[i].propertyType,
-                    ),
-                  ),
+                  isDisabled: false,
                   onTap: () => context
                       .read<HomeSuggestedRoomsCubit>()
                       .selectCategory(_categories[i].propertyType),
